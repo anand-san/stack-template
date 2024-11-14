@@ -1,0 +1,40 @@
+/* From Uiverse.io by catraco */
+.spinner {
+  --size: 30px;
+  --first-clr: #d946ef;
+  --second-clr: #22c55e;
+  width: 100px;
+  height: 100px;
+  position: relative;
+}
+
+.spinner::before,
+.spinner::after {
+  content: "";
+  width: var(--size);
+  height: var(--size);
+  border: 6px solid var(--first-clr);
+  position: absolute;
+  top: 50%;
+  left: calc(var(--size));
+  transform: translate(-50%, -50%);
+  animation: kf-spin 1s linear infinite;
+  border-radius: 50% 80% 50% 70%;
+  box-sizing: border-box;
+}
+
+.spinner::after {
+  top: 50%;
+  left: calc(var(--size) * 2);
+  border: 6px solid var(--second-clr);
+  animation: kf-spin 1s linear infinite reverse;
+}
+
+@keyframes kf-spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
