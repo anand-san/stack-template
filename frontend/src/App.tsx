@@ -1,4 +1,4 @@
-import { Suspense, useEffect } from "react";
+import { Suspense, useEffect, lazy } from "react";
 import {
   BrowserRouter as Router,
   Routes,
@@ -7,17 +7,19 @@ import {
   useNavigate,
 } from "react-router-dom";
 import "./App.css";
-import { FullScreenLoader } from "@/components/loader";
-import LoginScreen from "@/pages/auth/Login";
-import SignupScreen from "@/pages/auth/Register";
-import ForgotPasswordScreen from "@/pages/auth/ForgotPassword";
+import { FullScreenLoader } from "./components/loader";
 import { AppLayout } from "./pages/Layout";
-import { useAuth } from "@/hooks/useAuth";
-import Home from "./pages/Home";
+import { useAuth } from "./hooks/useAuth";
+import { getApiStatus } from "./lib/api/health";
+
+// Lazy load route components
+const LoginScreen = lazy(() => import("./pages/auth/Login"));
+const SignupScreen = lazy(() => import("./pages/auth/Register"));
+const ForgotPasswordScreen = lazy(() => import("./pages/auth/ForgotPassword"));
+const Home = lazy(() => import("./pages/Home"));
 
 const ProtectedRoute: React.FC = () => {
   const { user, loading } = useAuth();
-
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -34,6 +36,11 @@ const ProtectedRoute: React.FC = () => {
 };
 
 function App() {
+  useEffect(() => {
+    getApiStatus().then((res) => {
+      console.log("App is running, Status", res);
+    });
+  }, []);
   return (
     <>
       <Suspense fallback={<FullScreenLoader />}>
