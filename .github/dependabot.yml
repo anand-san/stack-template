@@ -1,0 +1,14 @@
+version: 2
+updates:
+  - package-ecosystem: "npm" # Specify npm for JavaScript/TypeScript projects
+    directory: "/" # Root-level package.json
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "npm"
+    directory: "/server" # Path to the first package.json
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "npm"
+    directory: "/frontend" # Path to the second package.json
+    schedule:
+      interval: "weekly"

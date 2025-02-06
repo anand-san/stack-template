@@ -1,13 +1,20 @@
 {
   "$schema": "https://railway.app/railway.schema.json",
   "build": {
-    "builder": "NIXPACKS"
+    "builder": "NIXPACKS",
+    "watchPatterns": [
+      "package.json",
+      "bun.lockb",
+      "Dockerfile",
+      "railway.json",
+      "server/**",
+      "config/**"
+    ]
   },
   "deploy": {
     "runtime": "V2",
     "numReplicas": 1,
-    "healthcheckPath": "/api/health",
-    "sleepApplication": true,
+    "healthcheckPath": "/health",
     "restartPolicyType": "ON_FAILURE",
     "restartPolicyMaxRetries": 10
   }

@@ -1,0 +1,28 @@
+name: Build App
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  Build-All-Apps:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+
+      - name: Clean Install
+        run: |
+          rm -rf node_modules
+          rm -rf **/node_modules
+          rm -f bun.lockb
+          bun install --no-cache
+
+      - name: Build All Apps
+        run: bun --filter "*" build
