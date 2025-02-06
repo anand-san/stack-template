@@ -1,0 +1,27 @@
+{
+  "name": "@sandilya-stack/server",
+  "module": "index.ts",
+  "type": "module",
+  "exports": {
+    "./types": "./types/shared/index.ts",
+    "./app": "./app.ts"
+  },
+  "scripts": {
+    "start": "bun index.ts",
+    "dev": "bun --watch index.ts",
+    "check-types": "tsc --noemit",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "prettier": "prettier --check .",
+    "prettier:fix": "prettier --write .",
+    "format": "bun run lint && bun run prettier && bun run check-types",
+    "build": "bun build ./index.ts --target bun --outdir ./dist --minify-whitespace --minify-identifiers --minify-syntax"
+  },
+  "dependencies": {
+    "@hono/zod-validator": "^0.4.2",
+    "dotenv": "^16.4.5"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  }
+}
