@@ -1,11 +1,39 @@
+# Dependencies
 node_modules
+**/node_modules
 npm-debug.log
+
+# Git
 .git
 .gitignore
-.env
+
+# Environment files (will be mounted as volumes)
+**/.env
+**/.env.*
+!**/develop.env
+
+# Build outputs
+**/dist
+**/build
+
+# Logs
+*.log
+
+# Documentation
 *.md
-frontend/node_modules
-server/node_modules
-frontend/dist
-frontend/.env
-server/.env
+LICENSE
+
+# Development configs
+.vscode
+.idea
+
+# Keep necessary files
+!package.json
+!bun.lockb
+!**/package.json
+!tsconfig*.json
+!.prettierrc*
+!.eslintrc*
+!postcss.config*
+!tailwind.config*
+!vite.config*
