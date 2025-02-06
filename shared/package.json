@@ -1,0 +1,18 @@
+{
+  "name": "@sandilya-stack/shared",
+  "version": "1.0.0",
+  "description": "Shared configuration files for the project",
+  "type": "module",
+  "types": "./types.d.ts",
+  "exports": {
+    "./config/eslint": "./config/eslint.base.mjs",
+    "./config/prettier": "./config/prettier.base.mjs",
+    "./config/tsconfig": "./config/tsconfig.base.json",
+    "./types": "./types/index.ts"
+  },
+  "files": [
+    "config",
+    "types",
+    "types.d.ts"
+  ]
+}
