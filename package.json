@@ -2,6 +2,7 @@
   "name": "sandilya-stack",
   "module": "server/index.ts",
   "workspaces": [
+    "frontend",
     "server",
     "shared"
   ],
