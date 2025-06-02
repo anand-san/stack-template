@@ -18,7 +18,7 @@
     "build": "bun build ./index.ts --target bun --outdir ./dist --minify-whitespace --minify-identifiers --minify-syntax"
   },
   "dependencies": {
-    "@hono/zod-validator": "^0.5.0",
+    "@hono/zod-validator": "^0.7.0",
     "dotenv": "^16.4.5"
   },
   "devDependencies": {
