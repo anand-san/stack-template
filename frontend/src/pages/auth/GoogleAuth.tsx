@@ -1,8 +1,8 @@
-import { Button } from "@/components/ui/button";
-import { useState } from "react";
-import { auth } from "@/firebase";
-import { GoogleAuthProvider, signInWithPopup, AuthError } from "firebase/auth";
-import useAuthHandlers from "./useAuthHandlers";
+import { Button } from '@/components/ui/button';
+import { useState } from 'react';
+import { auth } from '@/firebase';
+import { GoogleAuthProvider, signInWithPopup, AuthError } from 'firebase/auth';
+import useAuthHandlers from './useAuthHandlers';
 
 export default function GoogleAuth() {
   const [isGoogleLoginLoading, setIsGoogleLoginLoading] = useState(false);
@@ -37,7 +37,7 @@ export default function GoogleAuth() {
       >
         <GoogleIcon className="mr-2 h-5 w-5" />
         <span>
-          {isGoogleLoginLoading ? "Signing in..." : "Login with Google"}
+          {isGoogleLoginLoading ? 'Signing in...' : 'Login with Google'}
         </span>
       </Button>
     </div>

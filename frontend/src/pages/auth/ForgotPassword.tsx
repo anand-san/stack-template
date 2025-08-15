@@ -1,16 +1,16 @@
-import { useState } from "react";
-import { SubmitHandler, useForm } from "react-hook-form";
-import { CheckCircle, Loader2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Link, Navigate } from "react-router-dom";
-import { auth } from "@/firebase";
-import { useAuth } from "@/hooks/useAuth";
-import { sendPasswordResetEmail } from "firebase/auth";
-import { cn } from "@/lib/utils";
-import { toast } from "sonner";
-import { Loader } from "@/components/loader";
+import { useState } from 'react';
+import { SubmitHandler, useForm } from 'react-hook-form';
+import { CheckCircle, Loader2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Link, Navigate } from 'react-router-dom';
+import { auth } from '@/firebase';
+import { useAuth } from '@/hooks/useAuth';
+import { sendPasswordResetEmail } from 'firebase/auth';
+import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
+import { Loader } from '@/components/loader';
 
 interface IFormInput {
   email: string;
@@ -27,7 +27,7 @@ export default function ForgotPasswordScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
 
-  const handlePasswordReset: SubmitHandler<IFormInput> = async (data) => {
+  const handlePasswordReset: SubmitHandler<IFormInput> = async data => {
     setIsLoading(true);
     const { email } = data;
 
@@ -35,8 +35,8 @@ export default function ForgotPasswordScreen() {
       await sendPasswordResetEmail(auth, email);
       setEmailSent(true);
     } catch {
-      toast.error("Uh oh! Something went wrong.", {
-        description: "Could not send password reset email",
+      toast.error('Uh oh! Something went wrong.', {
+        description: 'Could not send password reset email',
       });
       //   handleAuthError(error as AuthError);
     } finally {
@@ -53,7 +53,7 @@ export default function ForgotPasswordScreen() {
   }
 
   if (user) {
-    return <Navigate to={"/"} />;
+    return <Navigate to={'/'} />;
   }
 
   return (
@@ -90,15 +90,15 @@ export default function ForgotPasswordScreen() {
                 type="email"
                 placeholder="Email address"
                 autoComplete="email"
-                {...register("email", {
-                  required: "Email is required",
+                {...register('email', {
+                  required: 'Email is required',
                   pattern: {
                     value: /^\S+@\S+$/i,
-                    message: "Invalid email address",
+                    message: 'Invalid email address',
                   },
                 })}
                 className={cn(
-                  "mr-2.5 mb-2 h-full min-h-[44px] w-full rounded-lg border border-zinc-200 px-4 py-3 text-sm font-medium placeholder:text-zinc-400 focus:outline-0 dark:border-zinc-800  dark:placeholder:text-zinc-500"
+                  'mr-2.5 mb-2 h-full min-h-[44px] w-full rounded-lg border border-zinc-200 px-4 py-3 text-sm font-medium placeholder:text-zinc-400 focus:outline-0 dark:border-zinc-800  dark:placeholder:text-zinc-500',
                 )}
               />
               {errors.email && (
@@ -109,7 +109,7 @@ export default function ForgotPasswordScreen() {
             </div>
 
             <Button
-              variant={"outline"}
+              variant={'outline'}
               type="submit"
               className="mt-2 h-[unset] px-4 py-4 w-full"
               disabled={isLoading}
@@ -117,14 +117,14 @@ export default function ForgotPasswordScreen() {
               {isLoading ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               ) : (
-                "Request Password Reset"
+                'Request Password Reset'
               )}
             </Button>
           </form>
         )}
 
         <p className="text-center text-sm text-gray-600">
-          Go back to{" "}
+          Go back to{' '}
           <Link
             to="/login"
             className="font-medium text-primary hover:underline"

@@ -10,7 +10,7 @@
 
 .spinner::before,
 .spinner::after {
-  content: "";
+  content: '';
   width: var(--size);
   height: var(--size);
   border: 6px solid var(--first-clr);

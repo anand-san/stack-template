@@ -1,6 +1,6 @@
-import { createContext, useState, useEffect, ReactNode } from "react";
-import { onAuthStateChanged, User } from "firebase/auth";
-import { auth } from "@/firebase";
+import { createContext, useState, useEffect, ReactNode } from 'react';
+import { onAuthStateChanged, User } from 'firebase/auth';
+import { auth } from '@/firebase';
 
 export interface AuthContextType {
   user: User | null;
@@ -8,7 +8,7 @@ export interface AuthContextType {
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(
-  undefined
+  undefined,
 );
 
 interface AuthProviderProps {
@@ -20,7 +20,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
+    const unsubscribe = onAuthStateChanged(auth, user => {
       setUser(user);
       setLoading(false);
     });
