@@ -1,22 +1,22 @@
-import { Suspense, useEffect, lazy } from "react";
+import { Suspense, useEffect, lazy } from 'react';
 import {
   BrowserRouter as Router,
   Routes,
   Route,
   Navigate,
   useNavigate,
-} from "react-router-dom";
-import "./App.css";
-import { FullScreenLoader } from "./components/loader";
-import { AppLayout } from "./pages/Layout";
-import { useAuth } from "./hooks/useAuth";
-import { getApiStatus } from "./lib/api/health";
+} from 'react-router-dom';
+import './App.css';
+import { FullScreenLoader } from './components/loader';
+import { AppLayout } from './pages/Layout';
+import { useAuth } from './hooks/useAuth';
+import { getApiStatus } from './lib/api/health';
 
 // Lazy load route components
-const LoginScreen = lazy(() => import("./pages/auth/Login"));
-const SignupScreen = lazy(() => import("./pages/auth/Register"));
-const ForgotPasswordScreen = lazy(() => import("./pages/auth/ForgotPassword"));
-const Home = lazy(() => import("./pages/Home"));
+const LoginScreen = lazy(() => import('./pages/auth/Login'));
+const SignupScreen = lazy(() => import('./pages/auth/Register'));
+const ForgotPasswordScreen = lazy(() => import('./pages/auth/ForgotPassword'));
+const Home = lazy(() => import('./pages/Home'));
 
 const ProtectedRoute: React.FC = () => {
   const { user, loading } = useAuth();
@@ -24,7 +24,7 @@ const ProtectedRoute: React.FC = () => {
 
   useEffect(() => {
     if (!user && !loading) {
-      navigate("/login");
+      navigate('/login');
     }
   }, [user, navigate, loading]);
 
@@ -37,8 +37,8 @@ const ProtectedRoute: React.FC = () => {
 
 function App() {
   useEffect(() => {
-    getApiStatus().then((res) => {
-      console.log("App is running, Status", res);
+    getApiStatus().then(res => {
+      console.log('App is running, Status', res);
     });
   }, []);
   return (
@@ -52,7 +52,7 @@ function App() {
             <Route path="/login" element={<LoginScreen />} />
             <Route path="/signup" element={<SignupScreen />} />
             <Route path="/forgot-password" element={<ForgotPasswordScreen />} />
-            <Route path="*" element={<Navigate to={"/"} />} />
+            <Route path="*" element={<Navigate to={'/'} />} />
           </Routes>
         </Router>
       </Suspense>

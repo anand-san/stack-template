@@ -1,17 +1,17 @@
-import { useState } from "react";
-import { SubmitHandler, useForm } from "react-hook-form";
-import { Eye, EyeOff, Loader2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Link, Navigate } from "react-router-dom";
-import { auth } from "@/firebase";
-import { useAuth } from "@/hooks/useAuth";
-import { AuthError, signInWithEmailAndPassword } from "firebase/auth";
-import { Loader } from "@/components/loader";
-import { cn } from "@/lib/utils";
-import GoogleAuth from "./GoogleAuth";
-import useAuthHandlers from "./useAuthHandlers";
+import { useState } from 'react';
+import { SubmitHandler, useForm } from 'react-hook-form';
+import { Eye, EyeOff, Loader2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Link, Navigate } from 'react-router-dom';
+import { auth } from '@/firebase';
+import { useAuth } from '@/hooks/useAuth';
+import { AuthError, signInWithEmailAndPassword } from 'firebase/auth';
+import { Loader } from '@/components/loader';
+import { cn } from '@/lib/utils';
+import GoogleAuth from './GoogleAuth';
+import useAuthHandlers from './useAuthHandlers';
 
 interface IFormInput {
   email: string;
@@ -30,7 +30,7 @@ export default function LoginScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const { handleAuthError, handleSuccessfulAuth } = useAuthHandlers();
 
-  const handleEmailPasswordLogin: SubmitHandler<IFormInput> = async (data) => {
+  const handleEmailPasswordLogin: SubmitHandler<IFormInput> = async data => {
     setIsLoading(true);
     const { email, password } = data;
 
@@ -55,7 +55,7 @@ export default function LoginScreen() {
   }
 
   if (user) {
-    return <Navigate to={"/"} />;
+    return <Navigate to={'/'} />;
   }
 
   return (
@@ -96,15 +96,15 @@ export default function LoginScreen() {
               type="email"
               placeholder="Email address"
               autoComplete="email"
-              {...register("email", {
-                required: "Email is required",
+              {...register('email', {
+                required: 'Email is required',
                 pattern: {
                   value: /^\S+@\S+$/i,
-                  message: "Invalid email address",
+                  message: 'Invalid email address',
                 },
               })}
               className={cn(
-                "mr-2.5 mb-2 h-full min-h-[44px] w-full rounded-lg border border-zinc-200 px-4 py-3 text-sm font-medium placeholder:text-zinc-400 focus:outline-0 dark:border-zinc-800  dark:placeholder:text-zinc-500"
+                'mr-2.5 mb-2 h-full min-h-[44px] w-full rounded-lg border border-zinc-200 px-4 py-3 text-sm font-medium placeholder:text-zinc-400 focus:outline-0 dark:border-zinc-800  dark:placeholder:text-zinc-500',
               )}
             />
             {errors.email && (
@@ -120,22 +120,22 @@ export default function LoginScreen() {
             <div className="relative">
               <Input
                 id="password"
-                type={showPassword ? "text" : "password"}
+                type={showPassword ? 'text' : 'password'}
                 placeholder="Password"
                 autoComplete="current-password"
-                {...register("password", {
-                  required: "Password is required",
+                {...register('password', {
+                  required: 'Password is required',
                   minLength: {
                     value: 8,
-                    message: "Password must be at least 8 characters",
+                    message: 'Password must be at least 8 characters',
                   },
                 })}
                 className={cn(
-                  "mr-2.5 mb-2 h-full min-h-[44px] w-full rounded-lg border border-zinc-200 px-4 py-3 text-sm font-medium placeholder:text-zinc-400 focus:outline-0 dark:border-zinc-800  dark:placeholder:text-zinc-500"
+                  'mr-2.5 mb-2 h-full min-h-[44px] w-full rounded-lg border border-zinc-200 px-4 py-3 text-sm font-medium placeholder:text-zinc-400 focus:outline-0 dark:border-zinc-800  dark:placeholder:text-zinc-500',
                 )}
               />
               <Button
-                variant={"link"}
+                variant={'link'}
                 className="absolute inset-y-0 right-0 pr-3 flex items-center h-full"
                 onClick={() => setShowPassword(!showPassword)}
               >
@@ -169,7 +169,7 @@ export default function LoginScreen() {
           </div>
 
           <Button
-            variant={"outline"}
+            variant={'outline'}
             type="submit"
             className="mt-2 h-[unset] px-4 py-4 w-full"
             disabled={isLoading}
@@ -177,13 +177,13 @@ export default function LoginScreen() {
             {isLoading ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             ) : (
-              "Sign in"
+              'Sign in'
             )}
           </Button>
         </form>
 
         <p className="text-center text-sm text-gray-600">
-          Don't have an account?{" "}
+          Don't have an account?{' '}
           <Link
             to="/signup"
             className="font-medium text-primary hover:underline"

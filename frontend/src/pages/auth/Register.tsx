@@ -1,19 +1,19 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { SubmitHandler, useForm } from "react-hook-form";
-import { Eye, EyeOff, Loader2, ArrowLeft, ArrowRight } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Link, Navigate, useNavigate } from "react-router-dom";
-import GoogleAuth from "./GoogleAuth";
-import { cn } from "@/lib/utils";
-import { Loader } from "@/components/loader";
-import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
-import { auth } from "@/firebase";
-import { useAuth } from "@/hooks/useAuth";
-import { toast } from "sonner";
+import { useState } from 'react';
+import { SubmitHandler, useForm } from 'react-hook-form';
+import { Eye, EyeOff, Loader2, ArrowLeft, ArrowRight } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Link, Navigate, useNavigate } from 'react-router-dom';
+import GoogleAuth from './GoogleAuth';
+import { cn } from '@/lib/utils';
+import { Loader } from '@/components/loader';
+import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
+import { auth } from '@/firebase';
+import { useAuth } from '@/hooks/useAuth';
+import { toast } from 'sonner';
 
 interface IFormInput {
   name: string;
@@ -37,7 +37,7 @@ export default function SignupScreen() {
     trigger,
   } = useForm<IFormInput>();
 
-  const onSubmit: SubmitHandler<IFormInput> = async (data) => {
+  const onSubmit: SubmitHandler<IFormInput> = async data => {
     const { email, password, name } = data;
     try {
       setIsLoading(true);
@@ -46,9 +46,9 @@ export default function SignupScreen() {
       await updateProfile(user.user, {
         displayName: name,
       });
-      navigate("/dashboard");
+      navigate('/dashboard');
     } catch {
-      toast.error("Uh oh! Something went wrong.", {
+      toast.error('Uh oh! Something went wrong.', {
         description: `Error signing up. Please try again`,
       });
     } finally {
@@ -56,17 +56,17 @@ export default function SignupScreen() {
     }
   };
 
-  const password = watch("password");
+  const password = watch('password');
 
   const nextStep = async () => {
-    const isValid = await trigger(["name", "email"]);
+    const isValid = await trigger(['name', 'email']);
     if (isValid) setStep(2);
   };
 
   const prevStep = () => setStep(1);
 
   const handleKeyDown = (event: React.KeyboardEvent<HTMLFormElement>) => {
-    if (event.key === "Enter" && step === 1) {
+    if (event.key === 'Enter' && step === 1) {
       event.preventDefault();
       nextStep();
     }
@@ -81,7 +81,7 @@ export default function SignupScreen() {
   }
 
   if (user) {
-    return <Navigate to={"/"} />;
+    return <Navigate to={'/'} />;
   }
 
   return (
@@ -125,11 +125,11 @@ export default function SignupScreen() {
                   type="text"
                   placeholder="Name"
                   autoComplete="name"
-                  {...register("name", {
-                    required: "Enter your name",
+                  {...register('name', {
+                    required: 'Enter your name',
                   })}
                   className={cn(
-                    "mr-2.5 mb-2 h-full min-h-[44px] w-full rounded-lg border border-zinc-200 px-4 py-3 text-sm font-medium placeholder:text-zinc-400 focus:outline-0 dark:border-zinc-800  dark:placeholder:text-zinc-500"
+                    'mr-2.5 mb-2 h-full min-h-[44px] w-full rounded-lg border border-zinc-200 px-4 py-3 text-sm font-medium placeholder:text-zinc-400 focus:outline-0 dark:border-zinc-800  dark:placeholder:text-zinc-500',
                   )}
                 />
                 {errors.name && (
@@ -147,15 +147,15 @@ export default function SignupScreen() {
                   type="email"
                   placeholder="Email address"
                   autoComplete="email"
-                  {...register("email", {
-                    required: "Email is required",
+                  {...register('email', {
+                    required: 'Email is required',
                     pattern: {
                       value: /^\S+@\S+$/i,
-                      message: "Invalid email address",
+                      message: 'Invalid email address',
                     },
                   })}
                   className={cn(
-                    "mr-2.5 mb-2 h-full min-h-[44px] w-full rounded-lg border border-zinc-200 px-4 py-3 text-sm font-medium placeholder:text-zinc-400 focus:outline-0 dark:border-zinc-800  dark:placeholder:text-zinc-500"
+                    'mr-2.5 mb-2 h-full min-h-[44px] w-full rounded-lg border border-zinc-200 px-4 py-3 text-sm font-medium placeholder:text-zinc-400 focus:outline-0 dark:border-zinc-800  dark:placeholder:text-zinc-500',
                   )}
                 />
                 {errors.email && (
@@ -165,7 +165,7 @@ export default function SignupScreen() {
                 )}
               </div>
               <Button
-                variant={"outline"}
+                variant={'outline'}
                 type="button"
                 className="mt-2 h-[unset] px-4 py-4 w-full"
                 onClick={nextStep}
@@ -184,29 +184,29 @@ export default function SignupScreen() {
                 <div className="relative">
                   <Input
                     id="password"
-                    type={showPassword ? "text" : "password"}
+                    type={showPassword ? 'text' : 'password'}
                     placeholder="Password"
                     autoComplete="new-password"
                     required
-                    {...register("password", {
-                      required: "Password is required",
+                    {...register('password', {
+                      required: 'Password is required',
                       minLength: {
                         value: 8,
-                        message: "Password must be at least 8 characters",
+                        message: 'Password must be at least 8 characters',
                       },
                       pattern: {
                         value:
                           /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/,
                         message:
-                          "Password must contain at least one uppercase letter, one lowercase letter, one number and one special character",
+                          'Password must contain at least one uppercase letter, one lowercase letter, one number and one special character',
                       },
                     })}
                     className={cn(
-                      "mr-2.5 mb-2 h-full min-h-[44px] w-full rounded-lg border border-zinc-200 px-4 py-3 text-sm font-medium placeholder:text-zinc-400 focus:outline-0 dark:border-zinc-800  dark:placeholder:text-zinc-500"
+                      'mr-2.5 mb-2 h-full min-h-[44px] w-full rounded-lg border border-zinc-200 px-4 py-3 text-sm font-medium placeholder:text-zinc-400 focus:outline-0 dark:border-zinc-800  dark:placeholder:text-zinc-500',
                     )}
                   />
                   <Button
-                    variant={"link"}
+                    variant={'link'}
                     className="absolute inset-y-0 right-0 pr-3 flex items-center h-full"
                     onClick={() => setShowPassword(!showPassword)}
                   >
@@ -232,13 +232,13 @@ export default function SignupScreen() {
                   type="password"
                   placeholder="Confirm password"
                   required
-                  {...register("confirmPassword", {
-                    required: "Please confirm your password",
-                    validate: (value) =>
-                      value === password || "The passwords do not match",
+                  {...register('confirmPassword', {
+                    required: 'Please confirm your password',
+                    validate: value =>
+                      value === password || 'The passwords do not match',
                   })}
                   className={cn(
-                    "mr-2.5 mb-2 h-full min-h-[44px] w-full rounded-lg border border-zinc-200 px-4 py-3 text-sm font-medium placeholder:text-zinc-400 focus:outline-0 dark:border-zinc-800  dark:placeholder:text-zinc-500"
+                    'mr-2.5 mb-2 h-full min-h-[44px] w-full rounded-lg border border-zinc-200 px-4 py-3 text-sm font-medium placeholder:text-zinc-400 focus:outline-0 dark:border-zinc-800  dark:placeholder:text-zinc-500',
                   )}
                 />
                 {errors.confirmPassword && (
@@ -264,7 +264,7 @@ export default function SignupScreen() {
                   {isLoading ? (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   ) : (
-                    "Sign up"
+                    'Sign up'
                   )}
                 </Button>
               </div>
@@ -273,7 +273,7 @@ export default function SignupScreen() {
         </form>
 
         <p className="text-center text-sm text-gray-600">
-          Already have an account?{" "}
+          Already have an account?{' '}
           <Link
             to="/login"
             className="font-medium text-primary hover:underline"
