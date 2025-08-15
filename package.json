@@ -9,38 +9,37 @@
   "type": "module",
   "scripts": {
     "dev": "bun run frontend:dev & bun run server:dev",
-    "build": "bun run frontend:build && bun run server:build && bun run chrome-extension:build",
+    "build": "bun run frontend:build && bun run server:build",
     "frontend:dev": "cd frontend && bun run dev",
     "frontend:build": "cd frontend && bun run build",
     "server:dev": "cd server && bun run dev",
     "server:build": "cd server && bun run build",
-    "chrome-extension:build": "cd chrome-extension && bun run build",
     "format": "bun run format:prettier && bun run format:eslint",
-    "format:prettier": "prettier --write \"./frontend/**/*.{js,jsx,ts,tsx,json,css,md}\" \"./server/**/*.{js,ts,json}\" \"./chrome-extension/**/*.{js,jsx,ts,tsx,json}\"",
+    "format:prettier": "prettier --write \"./frontend/**/*.{js,jsx,ts,tsx,json,css,md}\" \"./server/**/*.{js,ts,json}\"",
     "format:eslint": "eslint --fix",
     "lint": "bun run lint:prettier && bun run lint:eslint",
-    "lint:prettier": "prettier --check \"./frontend/**/*.{js,jsx,ts,tsx,json,css,md}\" \"./server/**/*.{js,ts,json}\" \"./chrome-extension/**/*.{js,jsx,ts,tsx,json}\"",
+    "lint:prettier": "prettier --check \"./frontend/**/*.{js,jsx,ts,tsx,json,css,md}\" \"./server/**/*.{js,ts,json}\"",
     "lint:eslint": "eslint",
     "prepare": "husky"
   },
   "devDependencies": {
-    "@eslint/js": "^9.17.0",
-    "eslint": "^9.17.0",
-    "eslint-config-prettier": "^10.1.1",
+    "@eslint/js": "9.33.0",
+    "eslint": "9.33.0",
+    "eslint-config-prettier": "10.1.8",
     "eslint-plugin-eslint-comments": "3.2.0",
-    "@typescript-eslint/eslint-plugin": "^8.27.0",
-    "@typescript-eslint/parser": "^8.27.0",
+    "@typescript-eslint/eslint-plugin": "8.39.1",
+    "@typescript-eslint/parser": "8.39.1",
     "eslint-plugin-import": "2.32.0",
-    "husky": "^9.1.7",
-    "prettier": "^3.4.2",
-    "typescript": "^5.7.2",
-    "typescript-eslint": "^8.18.2",
+    "husky": "9.1.7",
+    "prettier": "3.6.2",
+    "typescript": "5.9.2",
+    "typescript-eslint": "8.39.1",
     "@types/bun": "latest",
     "@types/node": "latest"
   },
   "dependencies": {
     "@sandilya-stack/shared": "workspace:*",
-    "hono": "^4.6.10",
-    "zod": "^3.23.8"
+    "hono": "4.9.2",
+    "zod": "4.0.17"
   }
 }
