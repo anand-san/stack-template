@@ -13,12 +13,8 @@ export default function GoogleAuth() {
 
     const provider = new GoogleAuthProvider();
     try {
-      const result = await signInWithPopup(auth, provider);
-      const user = result.user;
-      const credential = GoogleAuthProvider.credentialFromResult(result);
-      const token = credential?.accessToken;
-      //TODO: Store this on backend
-      console.log(user.uid, token);
+      await signInWithPopup(auth, provider);
+
       handleSuccessfulAuth();
     } catch (error) {
       handleAuthError(error as AuthError);
@@ -28,19 +24,17 @@ export default function GoogleAuth() {
   };
 
   return (
-    <div className="mt-8">
-      <Button
-        variant="outline"
-        className="focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 w-full py-6 "
-        onClick={handleGoogleSignIn}
-        disabled={isGoogleLoginLoading}
-      >
-        <GoogleIcon className="mr-2 h-5 w-5" />
-        <span>
-          {isGoogleLoginLoading ? 'Signing in...' : 'Login with Google'}
-        </span>
-      </Button>
-    </div>
+    <Button
+      variant="secondary"
+      className="p-5"
+      onClick={handleGoogleSignIn}
+      disabled={isGoogleLoginLoading}
+    >
+      <GoogleIcon className="mr-2 h-5 w-5" />
+      <span>
+        {isGoogleLoginLoading ? 'Signing in...' : 'Login with Google'}
+      </span>
+    </Button>
   );
 }
 

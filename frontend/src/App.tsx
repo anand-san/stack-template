@@ -14,8 +14,6 @@ import { getApiStatus } from './lib/api/health';
 
 // Lazy load route components
 const LoginScreen = lazy(() => import('./pages/auth/Login'));
-const SignupScreen = lazy(() => import('./pages/auth/Register'));
-const ForgotPasswordScreen = lazy(() => import('./pages/auth/ForgotPassword'));
 const Home = lazy(() => import('./pages/Home'));
 
 const ProtectedRoute: React.FC = () => {
@@ -50,8 +48,6 @@ function App() {
               <Route index element={<Home />} />
             </Route>
             <Route path="/login" element={<LoginScreen />} />
-            <Route path="/signup" element={<SignupScreen />} />
-            <Route path="/forgot-password" element={<ForgotPasswordScreen />} />
             <Route path="*" element={<Navigate to={'/'} />} />
           </Routes>
         </Router>
