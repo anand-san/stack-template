@@ -19,7 +19,13 @@ app.use('*', logger());
 app.use(
   '*',
   cors({
-    origin: '*',
+    origin: origin => {
+      {
+        if (origin.endsWith('.sandilya.dev')) {
+          return origin;
+        }
+      }
+    },
     allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowHeaders: [
       'Access-Control-Allow-Headers',
