@@ -7,8 +7,7 @@ WORKDIR /app
 COPY --link package.json bun.lockb ./
 COPY --link frontend/package.json ./frontend/
 COPY --link server/package.json ./server/
-COPY --link chrome-extension/package.json ./chrome-extension/
-COPY --link config/package.json ./config/
+COPY --link shared/package.json ./shared/
 
 # Install dependencies with specific platform to avoid architecture issues
 RUN --mount=type=cache,target=/root/.bun \

@@ -9,7 +9,7 @@ services:
       - "5173:5173"
     volumes:
       - ./frontend:/app/frontend:cached
-      - ./config:/app/config:cached
+      - ./shared:/app/shared:cached
       - ./package.json:/app/package.json:cached
       - ./bun.lockb:/app/bun.lockb:cached
       - frontend_deps:/app/frontend/node_modules
@@ -32,7 +32,7 @@ services:
       - "3000:3000"
     volumes:
       - ./server:/app/server:cached
-      - ./config:/app/config:cached
+      - ./shared:/app/shared:cached
       - ./package.json:/app/package.json:cached
       - ./bun.lockb:/app/bun.lockb:cached
       - server_deps:/app/server/node_modules
