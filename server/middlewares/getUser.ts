@@ -1,17 +1,24 @@
+import { getAuth } from '@hono/clerk-auth';
 import type { Context } from 'hono';
 
-// Authentication middleware
+interface CustomAuthVariables {
+  authUserId: string;
+}
+declare module 'hono' {
+  interface ContextVariableMap extends CustomAuthVariables {}
+}
+
 export const authenticateUser = async (c: Context, next: Function) => {
   try {
-    const authHeader = c.req.header('Authorization');
-    // if (!authHeader) {
-    //   return c.json({ error: "No authorization token provided" }, 401);
-    // }
-    console.log('authHeader', authHeader);
+    const auth = getAuth(c);
+    if (!auth?.userId) {
+      throw new Error('Not Authenticated');
+    }
+
+    c.set('authUserId', auth.userId);
 
     await next();
   } catch (error) {
-    console.error('Authentication error:', error);
-    return c.json({ error: 'Invalid or expired authentication token' }, 401);
+    return c.json({ message: 'Not Authenticated' }, 401);
   }
 };

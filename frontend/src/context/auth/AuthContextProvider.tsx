@@ -1,28 +1,18 @@
-import { useState, useEffect, ReactNode } from 'react';
-import { onAuthStateChanged, User } from 'firebase/auth';
-import { auth } from '@/firebase';
-import { AuthContext } from './AuthContext';
+import { ReactNode } from 'react';
+import { ClerkProvider } from '@clerk/clerk-react';
 
 interface AuthProviderProps {
   children: ReactNode;
 }
 
 export function AuthProvider({ children }: AuthProviderProps) {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, user => {
-      setUser(user);
-      setLoading(false);
-    });
-
-    return () => unsubscribe();
-  }, []);
+  if (!PUBLISHABLE_KEY) {
+    throw new Error('Add your Clerk Auth Publishable Key to the .env file');
+  }
 
   return (
-    <AuthContext.Provider value={{ user, loading }}>
-      {children}
-    </AuthContext.Provider>
+    <ClerkProvider publishableKey={PUBLISHABLE_KEY}>{children}</ClerkProvider>
   );
 }

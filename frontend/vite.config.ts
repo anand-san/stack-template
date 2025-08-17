@@ -14,7 +14,7 @@ export default defineConfig(({ mode }) => {
       },
     },
     server: {
-      host: true, // Needed for Docker
+      host: true,
       port: 5173,
       strictPort: true,
       watch: {
@@ -24,18 +24,16 @@ export default defineConfig(({ mode }) => {
     build: {
       target: 'esnext',
       sourcemap: false,
+      outDir: '../dist/frontend',
       rollupOptions: {
         output: {
           manualChunks: {
             vendor: ['react', 'react-dom'],
             router: ['react-router-dom'],
-            firebase: ['firebase/app', 'firebase/auth'],
           },
         },
       },
     },
-    optimizeDeps: {
-      include: ['firebase/app', 'firebase/auth'],
-    },
+    optimizeDeps: {},
   };
 });
