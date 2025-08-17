@@ -51,8 +51,8 @@ const apiRoutes = app
   .basePath('/api')
   .route('/hello', helloRoute);
 
-app.get('*', serveStatic({ root: '../dist/frontend' }));
-app.get('*', serveStatic({ path: '../dist/frontend/index.html' }));
+app.get('*', serveStatic({ root: './frontend' }));
+app.get('*', serveStatic({ path: './frontend/index.html' }));
 
 export default app;
 export type ApiRoutes = typeof apiRoutes;

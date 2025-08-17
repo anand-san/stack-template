@@ -13,7 +13,7 @@ RUN bun run build
 
 FROM oven/bun:1.2.13-alpine
 WORKDIR /app/
-COPY --from=installer /app/dist ./dist
+COPY --from=installer /app/dist .
 EXPOSE 3000
 ENV NODE_ENV=production
-CMD ["bun", "dist/index.js"]
+CMD ["bun", "index.js"]
