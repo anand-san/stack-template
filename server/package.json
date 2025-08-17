@@ -15,7 +15,7 @@
     "prettier": "prettier --check .",
     "prettier:fix": "prettier --write .",
     "format": "bun run lint && bun run prettier && bun run check-types",
-    "build": "bun build ./index.ts --target bun --outdir ../dist/server --minify-whitespace --minify-identifiers --minify-syntax"
+    "build": "bun build ./index.ts --target bun --outdir ../dist --minify-whitespace --minify-identifiers --minify-syntax"
   },
   "dependencies": {
     "@hono/clerk-auth": "^3.0.3",
