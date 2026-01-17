@@ -24,5 +24,10 @@ jobs:
           rm -f bun.lockb
           bun install --no-cache
 
+      - name: Run Tests
+        run: |
+          cd server && bun test
+          cd ../frontend && bun run test
+
       - name: Build All Apps
         run: bun --filter "*" build
