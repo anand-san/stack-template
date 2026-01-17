@@ -1,5 +1,5 @@
 {
-  "extends": "@sandilya-stack/shared/config/tsconfig",
+  "extends": "../shared/config/tsconfig.base.json",
   "compilerOptions": {
     "target": "ESNext",
     "module": "ESNext",
