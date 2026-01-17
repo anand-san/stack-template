@@ -11,7 +11,7 @@ import {
   createTodoSchema,
   idParamSchema,
   updateTodoSchema,
-} from './todos/schemas';
+} from '@sandilya-stack/shared/types';
 
 export const todosRoute = new Hono()
   .get('/', async c => {
