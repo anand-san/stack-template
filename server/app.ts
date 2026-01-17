@@ -1,7 +1,6 @@
 import { Hono, type Context } from 'hono';
 import { logger } from 'hono/logger';
 import { cors } from 'hono/cors';
-import { serveStatic } from 'hono/bun';
 import { HTTPException } from 'hono/http-exception';
 import { helloRoute } from './routes/hello';
 import { todosRoute } from './routes/todos';
@@ -51,9 +50,6 @@ const apiRoutes = app
   .route('/hello', helloRoute)
   // Note: This is just a sample route to demonstrate basic usage of services while templating
   .route('/todos', todosRoute);
-
-app.get('*', serveStatic({ root: './frontend' }));
-app.get('*', serveStatic({ path: './frontend/index.html' }));
 
 export default app;
 export type ApiRoutes = typeof apiRoutes;
