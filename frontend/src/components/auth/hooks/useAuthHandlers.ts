@@ -27,6 +27,9 @@ export default function useAuthHandlers() {
           description: 'Too many login attempts. Please try again later.',
         });
         break;
+      case 'auth/popup-closed-by-user':
+      case 'auth/cancelled-popup-request':
+        return;
       case 'auth/invalid-action-code':
         toast.error('Invalid authorization code', {
           description: 'Invalid authorization code. Please try again.',

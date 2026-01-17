@@ -10,6 +10,7 @@ import useAuthHandlers from '@/components/auth/hooks/useAuthHandlers';
 import { useEmailLinkAuth } from '@/components/auth/hooks/useEmailLinkAuth';
 import { useGoogleAuth } from '@/components/auth/hooks/useGoogleAuth';
 import { useSendEmailLink } from '@/components/auth/hooks/useSendEmailLink';
+import { isValidEmail } from '@/utils/isValidEmail';
 
 export default function SignIn() {
   const { isLoading: authLoading } = useAuth();
@@ -17,10 +18,17 @@ export default function SignIn() {
   const [emailSent, setEmailSent] = useState(false);
   const [sentEmailAddress, setSentEmailAddress] = useState('');
   const [email, setEmail] = useState('');
+  const [needsEmailInput, setNeedsEmailInput] = useState(false);
 
-  const { handleEmailLink, isLoading: emailLinkLoading } = useEmailLinkAuth({
+  const {
+    handleEmailLink,
+    submitEmailForLink,
+    isLoading: emailLinkLoading,
+    needsEmailConfirmation,
+  } = useEmailLinkAuth({
     onError: handleAuthError,
     onSuccess: handleSuccessfulAuth,
+    onEmailRequired: () => setNeedsEmailInput(true),
   });
 
   const { handleGoogleSignIn, isLoading: googleLoading } = useGoogleAuth({
@@ -45,8 +53,6 @@ export default function SignIn() {
     } catch (error) {
       window.history.replaceState({}, document.title, window.location.pathname);
       handleAuthError(error as AuthError);
-    } finally {
-      window.localStorage.removeItem('emailForSignIn');
     }
   }, [handleEmailLink, handleAuthError]);
 
@@ -55,8 +61,12 @@ export default function SignIn() {
   }, [handleAuthCallbacks]);
 
   const handleSubmitEmail = () => {
-    if (email) {
-      sendEmailLink(email);
+    if (email && isValidEmail(email)) {
+      if (needsEmailConfirmation) {
+        submitEmailForLink(email);
+      } else {
+        sendEmailLink(email);
+      }
     }
   };
 
@@ -135,40 +145,46 @@ export default function SignIn() {
 
             <div className="space-y-2">
               <h1 className="text-2xl font-semibold text-foreground">
-                Welcome
+                {needsEmailInput ? 'Confirm your email' : 'Welcome'}
               </h1>
               <p className="text-muted-foreground">
-                Sign in to your account to continue
+                {needsEmailInput
+                  ? 'Enter the email address you used to request the sign-in link'
+                  : 'Sign in to your account to continue'}
               </p>
             </div>
 
-            <div className="space-y-4">
-              <Button
-                onClick={handleGoogleSignIn}
-                variant="outline"
-                className="w-full"
-                size="lg"
-                disabled={googleLoading || sendingEmail}
-              >
-                {googleLoading ? (
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                ) : (
-                  <GoogleIcon className="w-5 h-5 mr-2" />
-                )}
-                Continue with Google
-              </Button>
-            </div>
+            {!needsEmailInput && (
+              <>
+                <div className="space-y-4">
+                  <Button
+                    onClick={handleGoogleSignIn}
+                    variant="outline"
+                    className="w-full"
+                    size="lg"
+                    disabled={googleLoading || sendingEmail}
+                  >
+                    {googleLoading ? (
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    ) : (
+                      <GoogleIcon className="w-5 h-5 mr-2" />
+                    )}
+                    Continue with Google
+                  </Button>
+                </div>
 
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-card px-2 text-muted-foreground">
-                  Or continue with email
-                </span>
-              </div>
-            </div>
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center">
+                    <span className="w-full border-t" />
+                  </div>
+                  <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-card px-2 text-muted-foreground">
+                      Or continue with email
+                    </span>
+                  </div>
+                </div>
+              </>
+            )}
 
             <div className="space-y-4 text-left">
               <div className="space-y-2">
@@ -189,14 +205,20 @@ export default function SignIn() {
               onClick={handleSubmitEmail}
               className="w-full"
               size="lg"
-              disabled={sendingEmail || !email || googleLoading}
+              disabled={
+                sendingEmail ||
+                !email ||
+                !isValidEmail(email) ||
+                googleLoading ||
+                emailLinkLoading
+              }
             >
-              {sendingEmail ? (
+              {sendingEmail || emailLinkLoading ? (
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
               ) : (
                 <Mail className="w-4 h-4 mr-2" />
               )}
-              Send Sign-In Link
+              {needsEmailInput ? 'Confirm & Sign In' : 'Send Sign-In Link'}
             </Button>
 
             <p className="text-xs text-muted-foreground">

@@ -1,5 +1,5 @@
 import { AuthError, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { auth } from '@/lib/firebase';
 
 interface UseGoogleAuthProps {
@@ -10,7 +10,7 @@ interface UseGoogleAuthProps {
 export const useGoogleAuth = ({ onError, onSuccess }: UseGoogleAuthProps) => {
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleGoogleSignIn = async () => {
+  const handleGoogleSignIn = useCallback(async () => {
     setIsLoading(true);
 
     const provider = new GoogleAuthProvider();
@@ -22,7 +22,7 @@ export const useGoogleAuth = ({ onError, onSuccess }: UseGoogleAuthProps) => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [onError, onSuccess]);
 
   return { handleGoogleSignIn, isLoading };
 };

@@ -2,7 +2,7 @@ import { ThemeToggle } from '@/components/ToggleTheme';
 import { Button } from '@/components/ui/button';
 import { LogOutIcon } from 'lucide-react';
 import { Outlet } from 'react-router-dom';
-import SignIn from '@/components/SignIn';
+import SignIn from '@/components/auth/SignIn';
 import { useAuth } from '@/context/auth/AuthContextProvider';
 import { FullScreenLoader } from '@/components/loader';
 

@@ -8,7 +8,7 @@ import { ThemeProvider } from './context/theme/ThemeProvider.tsx';
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <AuthProvider>
-      <ThemeProvider defaultTheme="light" storageKey="paiper-ui-theme">
+      <ThemeProvider defaultTheme="light" storageKey="ui-theme">
         <App />
       </ThemeProvider>
     </AuthProvider>
