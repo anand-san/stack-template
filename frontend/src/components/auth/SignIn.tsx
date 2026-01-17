@@ -6,10 +6,10 @@ import { Mail, Shield, Loader2, ArrowLeft } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/context/auth/AuthContextProvider';
-import useAuthHandlers from '@/hooks/useAuthHandlers';
-import { useEmailLinkAuth } from '@/hooks/useEmailLinkAuth';
-import { useGoogleAuth } from '@/hooks/useGoogleAuth';
-import { useSendEmailLink } from '@/hooks/useSendEmailLink';
+import useAuthHandlers from '@/components/auth/hooks/useAuthHandlers';
+import { useEmailLinkAuth } from '@/components/auth/hooks/useEmailLinkAuth';
+import { useGoogleAuth } from '@/components/auth/hooks/useGoogleAuth';
+import { useSendEmailLink } from '@/components/auth/hooks/useSendEmailLink';
 
 export default function SignIn() {
   const { isLoading: authLoading } = useAuth();
