@@ -1,11 +1,11 @@
-import { useUser } from '@clerk/clerk-react';
 import { useState } from 'react';
 import { sendHello } from '../api/hello';
 import { Button } from '@/components/ui/button';
 import { Hand, Loader2 } from 'lucide-react';
+import { useAuth } from '@/context/auth/AuthContextProvider';
 
 export default function Home() {
-  const { user } = useUser();
+  const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [response, setResponse] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -27,7 +27,7 @@ export default function Home() {
 
   return (
     <div className="flex justify-center items-center flex-col">
-      <p>Hello {user?.fullName}, This is a protected Route</p>
+      <p>Hello {user?.displayName || user?.email}, This is a protected Route</p>
 
       <div style={{ marginTop: '20px' }}>
         <Button onClick={handlePingHello} disabled={isLoading} className="w-xs">

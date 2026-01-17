@@ -1,32 +1,34 @@
 import { useState } from 'react';
-import { RedirectToSignIn, RedirectToSignUp } from '@clerk/clerk-react';
 import { Button } from '@/components/ui/button';
 import { ThemeToggle } from '@/components/ToggleTheme';
 import { LogIn, UserPlus, Shield } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { useAuth } from '@/context/auth/AuthContextProvider';
 
 export default function SignIn() {
-  const [showRedirect, setShowRedirect] = useState(false);
-  const [redirectMode, setRedirectMode] = useState<'sign-in' | 'sign-up'>(
-    'sign-in',
-  );
+  const { signIn, signUp } = useAuth();
+  const [mode, setMode] = useState<'sign-in' | 'sign-up'>('sign-in');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleSignIn = () => {
-    setRedirectMode('sign-in');
-    setShowRedirect(true);
+  const handleSubmit = async () => {
+    setIsSubmitting(true);
+    setError(null);
+    try {
+      if (mode === 'sign-in') {
+        await signIn(email, password);
+      } else {
+        await signUp(email, password);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Authentication failed');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
-
-  const handleSignUp = () => {
-    setRedirectMode('sign-up');
-    setShowRedirect(true);
-  };
-
-  if (showRedirect) {
-    return redirectMode === 'sign-in' ? (
-      <RedirectToSignIn />
-    ) : (
-      <RedirectToSignUp />
-    );
-  }
 
   return (
     <div className="min-h-screen">
@@ -53,20 +55,65 @@ export default function SignIn() {
               </p>
             </div>
 
+            <div className="space-y-4 text-left">
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  autoComplete="email"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="password">Password</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  autoComplete={
+                    mode === 'sign-in' ? 'current-password' : 'new-password'
+                  }
+                />
+              </div>
+
+              {error && <div className="text-sm text-destructive">{error}</div>}
+            </div>
+
             <div className="space-y-3">
-              <Button onClick={handleSignIn} className="w-full" size="lg">
-                <LogIn className="w-4 h-4 mr-2" />
-                Sign In
+              <Button
+                onClick={handleSubmit}
+                className="w-full"
+                size="lg"
+                disabled={isSubmitting || !email || !password}
+              >
+                {mode === 'sign-in' ? (
+                  <>
+                    <LogIn className="w-4 h-4 mr-2" />
+                    Sign In
+                  </>
+                ) : (
+                  <>
+                    <UserPlus className="w-4 h-4 mr-2" />
+                    Create Account
+                  </>
+                )}
               </Button>
 
               <Button
-                onClick={handleSignUp}
+                onClick={() =>
+                  setMode(mode === 'sign-in' ? 'sign-up' : 'sign-in')
+                }
                 variant="outline"
                 className="w-full"
                 size="lg"
+                disabled={isSubmitting}
               >
-                <UserPlus className="w-4 h-4 mr-2" />
-                Create Account
+                {mode === 'sign-in'
+                  ? 'Need an account? Sign up'
+                  : 'Have an account? Sign in'}
               </Button>
             </div>
 

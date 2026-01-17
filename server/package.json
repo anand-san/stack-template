@@ -18,10 +18,10 @@
     "build": "bun build ./index.ts --target bun --outdir ../dist --minify-whitespace --minify-identifiers --minify-syntax"
   },
   "dependencies": {
-    "@hono/clerk-auth": "^3.0.3",
     "@hono/zod-validator": "^0.7.2",
     "@sentry/bun": "^10.5.0",
-    "dotenv": "^17.2.1"
+    "dotenv": "^17.2.1",
+    "firebase-admin": "^12.5.0"
   },
   "devDependencies": {
     "@types/bun": "latest"

@@ -4,12 +4,12 @@ import { sampleCreateSchema } from '@sandilya-stack/shared/types';
 
 export const helloRoute = new Hono()
   .get('/', async c => {
-    const userId = c.get('authUserId');
-    const clerkClient = c.get('clerk');
+    const user = c.get('user');
+    const userId = user.uid;
 
-    const user = await clerkClient.users.getUser(userId);
+    const display = user.name ?? user.email ?? userId;
 
-    return c.json({ message: `Hello ${user.firstName}! (from server)` });
+    return c.json({ message: `Hello ${display}! (from server)` });
   })
   .post(
     '/',

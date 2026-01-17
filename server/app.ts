@@ -4,9 +4,9 @@ import { cors } from 'hono/cors';
 import { serveStatic } from 'hono/bun';
 import { HTTPException } from 'hono/http-exception';
 import { helloRoute } from './routes/hello';
-import { clerkMiddleware } from '@hono/clerk-auth';
+import { firestoreRoute } from './routes/firestore';
 import env from './env';
-import { authenticateUser } from 'middlewares/getUser';
+import { authenticateUser } from './middlewares/auth/getUser';
 const app = new Hono();
 
 app.onError((err: unknown, ctx: Context) => {
@@ -18,7 +18,6 @@ app.onError((err: unknown, ctx: Context) => {
 
 // Middlwares
 app.use('*', logger());
-app.use('*', clerkMiddleware());
 app.use('/api/*', authenticateUser);
 app.use(
   '*',
@@ -49,7 +48,8 @@ app.use(
 const apiRoutes = app
   .get('/health', c => c.text('OK', 201))
   .basePath('/api')
-  .route('/hello', helloRoute);
+  .route('/hello', helloRoute)
+  .route('/firestore', firestoreRoute);
 
 app.get('*', serveStatic({ root: './frontend' }));
 app.get('*', serveStatic({ path: './frontend/index.html' }));
