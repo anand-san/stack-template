@@ -20,6 +20,9 @@
     "lint": "bun run lint:prettier && bun run lint:eslint",
     "lint:prettier": "prettier --check \"./frontend/**/*.{js,jsx,ts,tsx,json,css,md}\" \"./server/**/*.{js,ts,json}\"",
     "lint:eslint": "eslint",
+    "test": "bun run test:server && bun run test:frontend",
+    "test:server": "cd server && bun test",
+    "test:frontend": "cd frontend && bun run test",
     "prepare": "husky"
   },
   "devDependencies": {
