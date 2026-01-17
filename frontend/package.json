@@ -10,7 +10,8 @@
     "prettier": "prettier --check .",
     "prettier:fix": "prettier --write .",
     "format": "bun run lint && bun run prettier",
-    "preview": "bunx --bun vite preview"
+    "preview": "bunx --bun vite preview",
+    "check-types": "tsc --noemit"
   },
   "dependencies": {
     "@radix-ui/react-dropdown-menu": "^2.1.2",
