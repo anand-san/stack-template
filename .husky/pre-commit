@@ -2,6 +2,6 @@
 
 prettier $(git diff --cached --name-only --diff-filter=ACMR | sed 's| |\\ |g') --write --ignore-unknown
 
-eslint $(git diff --cached --name-only --diff-filter=ACMR | sed 's| |\\ |g') --report-unused-disable-directives
+eslint $(git diff --cached --name-only --diff-filter=ACMR | sed 's| |\\ |g') --report-unused-disable-directives --fix
 
 git update-index --again
