@@ -1,9 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import {
-  createUserWithEmailAndPassword,
   onAuthStateChanged,
-  signInWithEmailAndPassword,
   signOut as firebaseSignOut,
   type User,
 } from 'firebase/auth';
@@ -16,8 +14,6 @@ interface AuthProviderProps {
 type AuthContextValue = {
   user: User | null;
   isLoading: boolean;
-  signIn: (email: string, password: string) => Promise<void>;
-  signUp: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
 };
 
@@ -47,12 +43,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
     () => ({
       user,
       isLoading,
-      signIn: async (email, password) => {
-        await signInWithEmailAndPassword(auth, email, password);
-      },
-      signUp: async (email, password) => {
-        await createUserWithEmailAndPassword(auth, email, password);
-      },
       signOut: async () => {
         await firebaseSignOut(auth);
       },
