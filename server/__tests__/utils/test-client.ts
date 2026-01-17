@@ -1,7 +1,3 @@
-/**
- * Test utilities for Hono app testing
- */
-
 import type { Hono } from 'hono';
 
 type RequestOptions = {
@@ -10,16 +6,10 @@ type RequestOptions = {
   body?: unknown;
 };
 
-/**
- * Creates a test client for making requests to a Hono app
- */
 export function createTestClient(app: Hono) {
   const baseUrl = 'http://localhost';
 
   return {
-    /**
-     * Make a request to the app
-     */
     async request(path: string, options: RequestOptions = {}) {
       const { method = 'GET', headers = {}, body } = options;
 
@@ -41,9 +31,6 @@ export function createTestClient(app: Hono) {
       return app.fetch(request);
     },
 
-    /**
-     * Make an authenticated request with a Bearer token
-     */
     async authenticatedRequest(
       path: string,
       token: string,
@@ -58,7 +45,6 @@ export function createTestClient(app: Hono) {
       });
     },
 
-    // Convenience methods
     get: (path: string, headers?: Record<string, string>) =>
       createTestClient(app).request(path, { method: 'GET', headers }),
 
@@ -73,9 +59,6 @@ export function createTestClient(app: Hono) {
   };
 }
 
-/**
- * Helper to parse JSON response
- */
 export async function parseJsonResponse<T = unknown>(
   response: Response,
 ): Promise<T> {

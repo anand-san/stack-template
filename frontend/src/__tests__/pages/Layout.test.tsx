@@ -10,7 +10,6 @@ import {
 } from '../mocks/firebase-auth';
 import { AuthProvider } from '@/context/auth/AuthContextProvider';
 
-// Mock the hello API to prevent issues
 vi.mock('@/api/hello', () => ({
   sendHello: vi.fn(),
 }));
@@ -39,7 +38,6 @@ describe('AppLayout - Auth-based Routing', () => {
 
     renderLayout();
 
-    // SignIn page has "Welcome" heading and sign-in options
     expect(await screen.findByText('Welcome')).toBeInTheDocument();
     expect(
       screen.getByText('Sign in to your account to continue'),
@@ -56,7 +54,6 @@ describe('AppLayout - Auth-based Routing', () => {
 
     renderLayout();
 
-    // Home page shows user greeting and ping button
     expect(await screen.findByText(/Hello John Doe/)).toBeInTheDocument();
     expect(screen.getByText(/This is a protected Route/)).toBeInTheDocument();
     expect(
@@ -69,10 +66,8 @@ describe('AppLayout - Auth-based Routing', () => {
 
     renderLayout();
 
-    // Wait for Home content to render
     await screen.findByText(/Hello Test User/);
 
-    // Logout button has LogOutIcon - find by role
     const buttons = screen.getAllByRole('button');
     const logoutButton = buttons.find(btn =>
       btn.querySelector('.lucide-log-out'),

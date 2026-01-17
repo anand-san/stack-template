@@ -1,17 +1,10 @@
 import { vi } from 'vitest';
 import type { User } from 'firebase/auth';
 
-/**
- * Mock Firebase Auth module for testing
- */
-
 type AuthStateCallback = (user: User | null) => void;
 let authStateCallback: AuthStateCallback | null = null;
 let currentMockUser: User | null = null;
 
-/**
- * Mock user factory
- */
 export function createMockUser(overrides: Partial<User> = {}): User {
   return {
     uid: 'test-user-id',
@@ -45,9 +38,6 @@ export function createMockUser(overrides: Partial<User> = {}): User {
   } as User;
 }
 
-/**
- * Mock auth object
- */
 export const mockAuth: {
   currentUser: User | null;
   onAuthStateChanged: ReturnType<typeof vi.fn>;
@@ -58,24 +48,16 @@ export const mockAuth: {
   signOut: vi.fn(() => Promise.resolve()),
 };
 
-/**
- * Mock onAuthStateChanged implementation
- */
 export const mockOnAuthStateChanged = vi.fn(
   (_auth: unknown, callback: AuthStateCallback) => {
     authStateCallback = callback;
-    // Immediately call with current user state
     callback(currentMockUser);
-    // Return unsubscribe function
     return () => {
       authStateCallback = null;
     };
   },
 );
 
-/**
- * Set the mock user state (triggers auth state change)
- */
 export function setMockUser(user: User | null) {
   currentMockUser = user;
   mockAuth.currentUser = user;
@@ -84,9 +66,6 @@ export function setMockUser(user: User | null) {
   }
 }
 
-/**
- * Reset all auth mocks
- */
 export function resetAuthMocks() {
   currentMockUser = null;
   mockAuth.currentUser = null;

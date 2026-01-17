@@ -10,12 +10,10 @@ import {
 } from '../mocks/firebase-auth';
 import { AuthProvider } from '@/context/auth/AuthContextProvider';
 
-// Mock the hello API
 vi.mock('@/api/hello', () => ({
   sendHello: vi.fn(),
 }));
 
-// Import the mocked function
 import { sendHello } from '@/api/hello';
 const mockSendHello = vi.mocked(sendHello);
 
@@ -55,10 +53,8 @@ describe('Home Page - Ping Server', () => {
     });
     await user.click(pingButton);
 
-    // Verify API was called
     expect(mockSendHello).toHaveBeenCalledTimes(1);
 
-    // Verify response is displayed
     await waitFor(() => {
       expect(screen.getByText('Hello from the server!')).toBeInTheDocument();
     });
@@ -67,7 +63,6 @@ describe('Home Page - Ping Server', () => {
   it('should show loading state while API call is in progress', async () => {
     const user = userEvent.setup();
 
-    // Create a promise that we can control
     let resolvePromise: (value: string) => void;
     const pendingPromise = new Promise<string>(resolve => {
       resolvePromise = resolve;
@@ -81,10 +76,8 @@ describe('Home Page - Ping Server', () => {
     });
     await user.click(pingButton);
 
-    // Button should be disabled during loading
     expect(pingButton).toBeDisabled();
 
-    // Resolve the promise
     resolvePromise!('Done!');
 
     await waitFor(() => {
@@ -103,7 +96,6 @@ describe('Home Page - Ping Server', () => {
     });
     await user.click(pingButton);
 
-    // Verify error is displayed
     await waitFor(() => {
       expect(screen.getByText(/Error:/)).toBeInTheDocument();
       expect(screen.getByText('Network error')).toBeInTheDocument();
@@ -122,13 +114,11 @@ describe('Home Page - Ping Server', () => {
       name: /Ping Server/i,
     });
 
-    // First click
     await user.click(pingButton);
     await waitFor(() => {
       expect(screen.getByText('First response')).toBeInTheDocument();
     });
 
-    // Second click
     await user.click(pingButton);
     await waitFor(() => {
       expect(screen.queryByText('First response')).not.toBeInTheDocument();

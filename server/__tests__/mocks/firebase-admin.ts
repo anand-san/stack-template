@@ -1,14 +1,4 @@
-/**
- * Mock module for firebase-admin
- * This mock provides in-memory implementations of Firebase Admin SDK
- * for testing without requiring actual Firebase credentials.
- */
-
 import { mock } from 'bun:test';
-
-// ============================================================
-// Auth Mock
-// ============================================================
 
 export interface MockDecodedToken {
   uid: string;
@@ -27,20 +17,14 @@ export const mockAuth = {
   }),
 };
 
-/** Set what verifyIdToken should return */
 export function setMockVerifyIdToken(result: MockDecodedToken | Error) {
   mockVerifyResult = result;
 }
 
-/** Reset auth mocks to defaults */
 export function resetAuthMocks() {
   mockVerifyResult = { uid: 'test-user-id' };
   mockAuth.verifyIdToken.mockClear();
 }
-
-// ============================================================
-// Firestore Mock
-// ============================================================
 
 type FirestoreData = Record<string, Record<string, unknown>>;
 const collections: Record<string, FirestoreData> = {};
@@ -126,30 +110,22 @@ export const mockFirestore = {
   collection: mock((name: string) => createCollectionRef(name)),
 };
 
-/** Seed mock Firestore with test data */
 export function seedFirestore(collectionName: string, data: FirestoreData) {
   collections[collectionName] = { ...data };
 }
 
-/** Clear all Firestore mock data */
 export function clearFirestore() {
   Object.keys(collections).forEach(key => delete collections[key]);
 }
 
-/** Get current Firestore mock data (for assertions) */
 export function getFirestoreData(collectionName: string): FirestoreData {
   return { ...getCollection(collectionName) };
 }
 
-/** Reset all Firestore mocks */
 export function resetFirestoreMocks() {
   clearFirestore();
   mockFirestore.collection.mockClear();
 }
-
-// ============================================================
-// Timestamp Mock
-// ============================================================
 
 export const MockTimestamp = {
   now: () => ({
@@ -163,10 +139,6 @@ export const MockTimestamp = {
     nanoseconds: 0,
   }),
 };
-
-// ============================================================
-// Combined Reset
-// ============================================================
 
 export function resetAllMocks() {
   resetAuthMocks();

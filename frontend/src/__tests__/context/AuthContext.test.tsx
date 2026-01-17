@@ -7,7 +7,6 @@ import {
   createMockUser,
 } from '../mocks/firebase-auth';
 
-// Test component to access auth context
 function TestConsumer() {
   const { user, isLoading } = useAuth();
 
@@ -36,7 +35,6 @@ describe('AuthContext', () => {
       </AuthProvider>,
     );
 
-    // After first render, loading should be false because mock calls callback immediately
     expect(screen.getByTestId('auth-status')).toBeInTheDocument();
   });
 
@@ -74,7 +72,6 @@ describe('AuthContext', () => {
   });
 
   it('should throw error when useAuth is used outside provider', () => {
-    // Suppress console.error for this test
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
     expect(() => render(<TestConsumer />)).toThrow(
