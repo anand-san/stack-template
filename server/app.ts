@@ -4,7 +4,6 @@ import { cors } from 'hono/cors';
 import { serveStatic } from 'hono/bun';
 import { HTTPException } from 'hono/http-exception';
 import { helloRoute } from './routes/hello';
-import { firestoreRoute } from './routes/firestore';
 import env from './env';
 import { authenticateUser } from './middlewares/auth/getUser';
 const app = new Hono();
@@ -48,8 +47,7 @@ app.use(
 const apiRoutes = app
   .get('/health', c => c.text('OK', 201))
   .basePath('/api')
-  .route('/hello', helloRoute)
-  .route('/firestore', firestoreRoute);
+  .route('/hello', helloRoute);
 
 app.get('*', serveStatic({ root: './frontend' }));
 app.get('*', serveStatic({ path: './frontend/index.html' }));

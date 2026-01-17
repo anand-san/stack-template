@@ -1,16 +1,7 @@
 import type { Context, Next } from 'hono';
-import type { DecodedIdToken } from 'firebase-admin/auth';
 import { adminAuth } from '../../services/firebase';
-import { AuthUser } from './types';
-import { loggerService } from 'services/logger/loggerService';
-
-interface CustomAuthVariables {
-  authUserId: string;
-  authToken: DecodedIdToken;
-}
-declare module 'hono' {
-  interface ContextVariableMap extends CustomAuthVariables {}
-}
+import type { AuthUser } from './types';
+import { loggerService } from '../../services/logger/loggerService';
 
 export const authenticateUser = async (c: Context, next: Next) => {
   try {
@@ -30,7 +21,7 @@ export const authenticateUser = async (c: Context, next: Next) => {
     const user: AuthUser = {
       uid: decoded.uid,
       email: decoded.email,
-      name: decoded.name as string,
+      name: decoded.name,
     };
     c.set('user', user);
 
