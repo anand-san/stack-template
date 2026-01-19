@@ -1,4 +1,5 @@
 import { mock } from 'bun:test';
+import { Timestamp } from '../../services/firestoreRest';
 
 export interface MockDecodedToken {
   uid: string;
@@ -127,18 +128,7 @@ export function resetFirestoreMocks() {
   mockFirestore.collection.mockClear();
 }
 
-export const MockTimestamp = {
-  now: () => ({
-    toDate: () => new Date(),
-    seconds: Math.floor(Date.now() / 1000),
-    nanoseconds: 0,
-  }),
-  fromDate: (date: Date) => ({
-    toDate: () => date,
-    seconds: Math.floor(date.getTime() / 1000),
-    nanoseconds: 0,
-  }),
-};
+export const MockTimestamp = Timestamp;
 
 export function resetAllMocks() {
   resetAuthMocks();

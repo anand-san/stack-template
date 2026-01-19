@@ -1,17 +1,25 @@
 import { mock } from 'bun:test';
 import { mockAuth, mockFirestore, MockTimestamp } from './mocks/firebase-admin';
 
-mock.module('firebase-admin/app', () => ({
-  cert: () => ({}),
-  getApps: () => [],
-  initializeApp: () => ({}),
+// Mock the lightweight firebase services
+mock.module('../services/firebase', () => ({
+  adminAuth: mockAuth,
+  firestore: mockFirestore,
+  Timestamp: MockTimestamp,
 }));
 
-mock.module('firebase-admin/auth', () => ({
-  getAuth: () => mockAuth,
+// Mock the firebaseAuth module
+mock.module('../services/firebaseAuth', () => ({
+  verifyIdToken: mockAuth.verifyIdToken,
 }));
 
-mock.module('firebase-admin/firestore', () => ({
-  getFirestore: () => mockFirestore,
+// Mock the firestoreRest module
+mock.module('../services/firestoreRest', () => ({
+  initializeFirestore: () => {},
+  getDoc: mock(async () => ({ exists: false, data: () => undefined })),
+  setDoc: mock(async () => {}),
+  deleteDoc: mock(async () => {}),
+  createDoc: mock(async () => ({ id: 'new-id' })),
+  queryDocs: mock(async () => []),
   Timestamp: MockTimestamp,
 }));

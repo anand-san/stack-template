@@ -1,4 +1,4 @@
-import { Timestamp } from 'firebase-admin/firestore';
+import { Timestamp } from '../firebase';
 import { todoCollection } from './collection';
 import { todoDocRef, newTodoDocRef } from './refs';
 import type { Todo } from './types';
@@ -44,7 +44,7 @@ export async function listTodosByUserId(
 
   return snap.docs.map(d => ({
     id: d.id,
-    data: d.data(),
+    data: d.data() as Todo,
   }));
 }
 

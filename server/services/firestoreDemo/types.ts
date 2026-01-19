@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { Timestamp } from 'firebase-admin/firestore';
+import { Timestamp } from '../firebase';
 
 export const todoSchema = z.object({
   userId: z.string(),

@@ -1,11 +1,11 @@
-import type { DocumentReference } from 'firebase-admin/firestore';
+import type { DocumentReference } from './queryTypes';
 import { todoCollection } from './collection';
 import type { Todo } from './types';
 
 export function todoDocRef(id: string): DocumentReference<Todo> {
-  return todoCollection().doc(id);
+  return todoCollection().doc(id) as DocumentReference<Todo>;
 }
 
 export function newTodoDocRef(): DocumentReference<Todo> {
-  return todoCollection().doc();
+  return todoCollection().doc() as DocumentReference<Todo>;
 }
