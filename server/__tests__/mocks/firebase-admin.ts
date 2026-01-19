@@ -1,5 +1,5 @@
 import { mock } from 'bun:test';
-import { Timestamp } from '../../services/firestoreRest';
+import { Timestamp } from '../../custom-modules/firebase/timestamp';
 
 export interface MockDecodedToken {
   uid: string;

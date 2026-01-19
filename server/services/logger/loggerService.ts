@@ -1,11 +1,15 @@
 /**
- * Logger Service with Lazy-Loaded Sentry
- * Only imports @sentry/bun when SENTRY_ENABLED=true to save ~30-50MB memory
+ * Logger Service
+ * Uses lightweight custom Sentry client instead of @sentry/bun
  */
 import env from '../../env';
-
-// Lazy-loaded Sentry module
-let Sentry: typeof import('@sentry/bun') | null = null;
+import {
+  initSentry,
+  captureException,
+  captureMessage,
+  setUser,
+  isInitialized,
+} from '../../custom-modules/sentry';
 
 class LoggerService {
   private static instance: LoggerService;
@@ -19,20 +23,17 @@ class LoggerService {
     return LoggerService.instance;
   }
 
-  public async initialize() {
+  public initialize() {
     if (this.initialized) {
       return;
     }
 
-    this.sentryEnabled = env.SENTRY_ENABLED === 'true';
+    this.sentryEnabled = env.SENTRY_ENABLED === 'true' && !!env.SENTRY_DSN;
 
-    // Only load Sentry if enabled - saves ~30-50MB when disabled
-    if (this.sentryEnabled) {
-      Sentry = await import('@sentry/bun');
-      Sentry.init({
-        enabled: true,
+    if (this.sentryEnabled && env.SENTRY_DSN) {
+      initSentry({
         dsn: env.SENTRY_DSN,
-        tracesSampleRate: 1.0,
+        environment: env.SENTRY_ENVIRONMENT,
       });
     }
 
@@ -40,27 +41,27 @@ class LoggerService {
   }
 
   public logInfo(event: string, context?: Record<string, string>) {
-    if (!this.sentryEnabled || !Sentry) {
-      // eslint-disable-next-line no-console -- error debugging
-      console.info(event, context);
-      return;
+    // eslint-disable-next-line no-console -- logging
+    console.info(event, context);
+
+    if (this.sentryEnabled && isInitialized()) {
+      void captureMessage(event, 'info', {
+        ...context,
+        environment: env.SENTRY_ENVIRONMENT,
+      });
     }
-    Sentry.withScope(scope => {
-      scope.setExtras({ ...context, environment: env.SENTRY_ENVIRONMENT });
-      Sentry!.captureMessage(event, 'info');
-    });
   }
 
   public logWarning(event: string, context?: Record<string, string>) {
-    if (!this.sentryEnabled || !Sentry) {
-      // eslint-disable-next-line no-console -- error debugging
-      console.warn(event, context);
-      return;
+    // eslint-disable-next-line no-console -- logging
+    console.warn(event, context);
+
+    if (this.sentryEnabled && isInitialized()) {
+      void captureMessage(event, 'warning', {
+        ...context,
+        environment: env.SENTRY_ENVIRONMENT,
+      });
     }
-    Sentry.withScope(scope => {
-      scope.setExtras({ ...context, environment: env.SENTRY_ENVIRONMENT });
-      Sentry!.captureMessage(event, 'warning');
-    });
   }
 
   public logUserEvent(
@@ -68,60 +69,54 @@ class LoggerService {
     userId: string,
     context?: Record<string, string>,
   ) {
-    if (!this.sentryEnabled || !Sentry) {
-      // eslint-disable-next-line no-console -- error debugging
-      console.log(event, context);
-      return;
-    }
+    // eslint-disable-next-line no-console -- logging
+    console.log(event, context);
 
-    Sentry.withScope(scope => {
-      Sentry!.setUser({ id: userId });
-      scope.setExtras({ ...context, environment: env.SENTRY_ENVIRONMENT });
-      Sentry!.captureEvent({ message: event, user: { id: userId } });
-    });
+    if (this.sentryEnabled && isInitialized()) {
+      setUser({ id: userId });
+      void captureMessage(event, 'info', {
+        ...context,
+        userId,
+        environment: env.SENTRY_ENVIRONMENT,
+      });
+    }
   }
 
   public logError(error: unknown, context?: Record<string, string>) {
-    if (!this.sentryEnabled || !Sentry) {
-      // eslint-disable-next-line no-console -- error debugging
-      console.error(error, context);
-      return;
-    }
-    if (error instanceof Error) {
-      Sentry.withScope(scope => {
-        scope.setExtras({ ...context, environment: env.SENTRY_ENVIRONMENT });
-        Sentry!.captureException(error);
-      });
-    } else {
-      const errorMessage = String(error);
-      Sentry.withScope(scope => {
-        scope.setExtras({ ...context, environment: env.SENTRY_ENVIRONMENT });
-        Sentry!.captureMessage(errorMessage, 'error');
-      });
+    // eslint-disable-next-line no-console -- logging
+    console.error(error, context);
+
+    if (this.sentryEnabled && isInitialized()) {
+      if (error instanceof Error) {
+        void captureException(error, {
+          ...context,
+          environment: env.SENTRY_ENVIRONMENT,
+        });
+      } else {
+        void captureMessage(String(error), 'error', {
+          ...context,
+          environment: env.SENTRY_ENVIRONMENT,
+        });
+      }
     }
   }
 
   public setUser(id: string, email?: string, username?: string) {
-    if (!this.sentryEnabled || !Sentry) return;
-    Sentry.setUser({
-      id,
-      email,
-      username,
-    });
+    if (this.sentryEnabled && isInitialized()) {
+      setUser({ id, email, username });
+    }
   }
 
-  public setExtra(key: string, value: string | number) {
-    if (!this.sentryEnabled || !Sentry) return;
-    Sentry.setExtra(key, value);
+  public setExtra(_key: string, _value: string | number) {
+    // Not implemented in lightweight client
+    // Could add if needed
   }
 
-  public setTag(key: string, value: string) {
-    if (!this.sentryEnabled || !Sentry) return;
-    Sentry.setTag(key, value);
+  public setTag(_key: string, _value: string) {
+    // Not implemented in lightweight client
+    // Could add if needed
   }
 }
 
 export const loggerService = LoggerService.getInstance();
-
-// Initialize asynchronously - the first await will complete the initialization
-void loggerService.initialize();
+loggerService.initialize();
