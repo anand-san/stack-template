@@ -1,8 +1,11 @@
 /**
- * Firebase services - Lightweight implementations
- * Replaces firebase-admin SDK to reduce memory footprint
+ * Firebase services - Entry point
+ * Re-exports from the firebase module for backward compatibility
  */
-import { verifyIdToken, type DecodedIdToken } from './firebaseAuth';
+import {
+  verifyIdToken,
+  type DecodedIdToken,
+} from '../custom-modules/firebase/auth';
 import {
   initializeFirestore,
   getDoc,
@@ -12,7 +15,7 @@ import {
   Timestamp,
   type DocumentSnapshot,
   type WhereClause,
-} from './firestoreRest';
+} from '../custom-modules/firebase/firestore';
 import env from '../env';
 
 // Initialize Firestore with service account credentials
@@ -24,7 +27,7 @@ initializeFirestore({
   privateKey,
 });
 
-// Auth exports
+// Auth exports - wrapper for backward compatibility
 export const adminAuth = {
   verifyIdToken: (token: string) =>
     verifyIdToken(token, env.FIREBASE_PROJECT_ID),
@@ -37,7 +40,6 @@ export const firestore = {
       if (id) {
         return createDocRef(name, id);
       }
-      // Generate a new doc ID for new documents
       return createNewDocRef(name);
     },
     where: (field: string, op: WhereClause['op'], value: unknown) => ({
@@ -90,7 +92,6 @@ function createDocRef<T = Record<string, unknown>>(
 }
 
 function createNewDocRef<T = Record<string, unknown>>(collection: string) {
-  // Generate a random document ID similar to Firestore's auto-generated IDs
   const id = generateDocId();
   return {
     id,
@@ -115,3 +116,6 @@ function generateDocId(): string {
 // Re-export types and utilities
 export { Timestamp };
 export type { DecodedIdToken, DocumentSnapshot, WhereClause };
+
+// Also export errors for consumers
+export { FirestoreError, AuthError } from '../custom-modules/firebase/errors';

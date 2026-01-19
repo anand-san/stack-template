@@ -1,37 +1,22 @@
 /**
- * Lightweight Firestore REST API client
+ * Lightweight Firestore REST API Client
  * Replaces firebase-admin/firestore with direct REST calls
+ *
+ * @module firebase/firestore
  */
+import { FirestoreError } from './errors';
+import { Timestamp } from './timestamp';
+import type {
+  FirestoreValue,
+  FirestoreDocument,
+  QueryResponse,
+  DocumentSnapshot,
+  WhereClause,
+} from './types';
 
-export interface FirestoreTimestamp {
-  seconds: number;
-  nanos: number;
-}
-
-export class Timestamp {
-  constructor(
-    public seconds: number,
-    public nanoseconds: number,
-  ) {}
-
-  static now(): Timestamp {
-    const now = Date.now();
-    return new Timestamp(Math.floor(now / 1000), (now % 1000) * 1_000_000);
-  }
-
-  static fromDate(date: Date): Timestamp {
-    const ms = date.getTime();
-    return new Timestamp(Math.floor(ms / 1000), (ms % 1000) * 1_000_000);
-  }
-
-  toDate(): Date {
-    return new Date(this.seconds * 1000 + this.nanoseconds / 1_000_000);
-  }
-
-  toJSON(): { seconds: number; nanos: number } {
-    return { seconds: this.seconds, nanos: this.nanoseconds };
-  }
-}
+// Re-export for convenience
+export { Timestamp };
+export type { DocumentSnapshot, WhereClause };
 
 interface FirestoreConfig {
   projectId: string;
@@ -43,13 +28,39 @@ let config: FirestoreConfig | null = null;
 let accessToken: string | null = null;
 let tokenExpiry = 0;
 
+/**
+ * Initialize the Firestore client with service account credentials
+ *
+ * @param cfg - Service account configuration
+ * @throws {FirestoreError} If called with invalid config
+ *
+ * @example
+ * ```typescript
+ * initializeFirestore({
+ *   projectId: 'my-project',
+ *   clientEmail: 'sa@my-project.iam.gserviceaccount.com',
+ *   privateKey: '-----BEGIN PRIVATE KEY-----\n...',
+ * });
+ * ```
+ */
 export function initializeFirestore(cfg: FirestoreConfig): void {
+  if (!cfg.projectId || !cfg.clientEmail || !cfg.privateKey) {
+    throw new FirestoreError(
+      'invalid-argument',
+      'Missing required Firestore configuration',
+    );
+  }
   config = cfg;
 }
 
+/**
+ * Gets a valid access token, refreshing if necessary
+ * @internal
+ */
 async function getAccessToken(): Promise<string> {
   if (!config) {
-    throw new Error(
+    throw new FirestoreError(
+      'invalid-argument',
       'Firestore not initialized. Call initializeFirestore first.',
     );
   }
@@ -100,6 +111,14 @@ async function getAccessToken(): Promise<string> {
     body: `grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion=${jwt}`,
   });
 
+  if (!response.ok) {
+    throw new FirestoreError(
+      'unauthenticated',
+      'Failed to obtain access token',
+      response.status,
+    );
+  }
+
   const data = (await response.json()) as {
     access_token: string;
     expires_in: number;
@@ -110,6 +129,7 @@ async function getAccessToken(): Promise<string> {
   return accessToken;
 }
 
+/** Convert PEM to binary for Web Crypto */
 function pemToBinary(pem: string): ArrayBuffer {
   const base64 = pem
     .replace(/-----BEGIN PRIVATE KEY-----/, '')
@@ -123,6 +143,7 @@ function pemToBinary(pem: string): ArrayBuffer {
   return bytes.buffer;
 }
 
+/** Base64 URL encode */
 function base64UrlEncode(input: string | ArrayBuffer): string {
   let base64: string;
   if (typeof input === 'string') {
@@ -136,14 +157,19 @@ function base64UrlEncode(input: string | ArrayBuffer): string {
   return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
 
+/** Get Firestore REST API base URL */
 function getBaseUrl(): string {
-  if (!config) throw new Error('Firestore not initialized');
+  if (!config) {
+    throw new FirestoreError('invalid-argument', 'Firestore not initialized');
+  }
   return `https://firestore.googleapis.com/v1/projects/${config.projectId}/databases/(default)/documents`;
 }
 
-// Convert JS value to Firestore value format
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function toFirestoreValue(value: any): any {
+/**
+ * Convert JavaScript value to Firestore value format
+ * @internal
+ */
+function toFirestoreValue(value: unknown): FirestoreValue {
   if (value === null || value === undefined) {
     return { nullValue: null };
   }
@@ -160,11 +186,7 @@ function toFirestoreValue(value: any): any {
     return { booleanValue: value };
   }
   if (value instanceof Timestamp) {
-    return {
-      timestampValue: new Date(
-        value.seconds * 1000 + value.nanoseconds / 1_000_000,
-      ).toISOString(),
-    };
+    return { timestampValue: value.toISOString() };
   }
   if (value instanceof Date) {
     return { timestampValue: value.toISOString() };
@@ -173,7 +195,7 @@ function toFirestoreValue(value: any): any {
     return { arrayValue: { values: value.map(toFirestoreValue) } };
   }
   if (typeof value === 'object') {
-    const fields: Record<string, unknown> = {};
+    const fields: Record<string, FirestoreValue> = {};
     for (const [k, v] of Object.entries(value)) {
       fields[k] = toFirestoreValue(v);
     }
@@ -182,24 +204,28 @@ function toFirestoreValue(value: any): any {
   return { stringValue: String(value) };
 }
 
-// Convert Firestore value to JS value
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function fromFirestoreValue(value: any): any {
+/**
+ * Convert Firestore value to JavaScript value
+ * @internal
+ */
+function fromFirestoreValue(value: FirestoreValue): unknown {
   if ('nullValue' in value) return null;
   if ('stringValue' in value) return value.stringValue;
   if ('integerValue' in value) return parseInt(value.integerValue, 10);
   if ('doubleValue' in value) return value.doubleValue;
   if ('booleanValue' in value) return value.booleanValue;
   if ('timestampValue' in value) {
-    const date = new Date(value.timestampValue);
-    return Timestamp.fromDate(date);
+    return Timestamp.fromDate(new Date(value.timestampValue));
   }
+  if ('bytesValue' in value) return value.bytesValue;
+  if ('geoPointValue' in value) return value.geoPointValue;
+  if ('referenceValue' in value) return value.referenceValue;
   if ('arrayValue' in value) {
-    return (value.arrayValue.values || []).map(fromFirestoreValue);
+    return (value.arrayValue.values ?? []).map(fromFirestoreValue);
   }
   if ('mapValue' in value) {
     const result: Record<string, unknown> = {};
-    for (const [k, v] of Object.entries(value.mapValue.fields || {})) {
+    for (const [k, v] of Object.entries(value.mapValue.fields ?? {})) {
       result[k] = fromFirestoreValue(v);
     }
     return result;
@@ -207,12 +233,22 @@ function fromFirestoreValue(value: any): any {
   return null;
 }
 
-export interface DocumentSnapshot<T> {
-  exists: boolean;
-  id: string;
-  data(): T | undefined;
-}
-
+/**
+ * Gets a single document from Firestore
+ *
+ * @param collection - Collection name
+ * @param docId - Document ID
+ * @returns Document snapshot
+ * @throws {FirestoreError} On network or permission errors
+ *
+ * @example
+ * ```typescript
+ * const snap = await getDoc<User>('users', 'user-123');
+ * if (snap.exists) {
+ *   console.log(snap.data());
+ * }
+ * ```
+ */
 export async function getDoc<T>(
   collection: string,
   docId: string,
@@ -229,10 +265,10 @@ export async function getDoc<T>(
   }
 
   if (!response.ok) {
-    throw new Error(`Firestore error: ${response.status}`);
+    throw FirestoreError.fromStatus(response.status);
   }
 
-  const doc = (await response.json()) as { fields?: Record<string, unknown> };
+  const doc = (await response.json()) as FirestoreDocument;
 
   const data: Record<string, unknown> = {};
   if (doc.fields) {
@@ -244,6 +280,22 @@ export async function getDoc<T>(
   return { exists: true, id: docId, data: () => data as T };
 }
 
+/**
+ * Creates or overwrites a document in Firestore
+ *
+ * @param collection - Collection name
+ * @param docId - Document ID
+ * @param data - Document data
+ * @throws {FirestoreError} On network or permission errors
+ *
+ * @example
+ * ```typescript
+ * await setDoc('users', 'user-123', {
+ *   name: 'John',
+ *   createdAt: Timestamp.now(),
+ * });
+ * ```
+ */
 export async function setDoc<T extends Record<string, unknown>>(
   collection: string,
   docId: string,
@@ -252,7 +304,7 @@ export async function setDoc<T extends Record<string, unknown>>(
   const token = await getAccessToken();
   const url = `${getBaseUrl()}/${collection}/${docId}`;
 
-  const fields: Record<string, unknown> = {};
+  const fields: Record<string, FirestoreValue> = {};
   for (const [k, v] of Object.entries(data)) {
     fields[k] = toFirestoreValue(v);
   }
@@ -268,10 +320,21 @@ export async function setDoc<T extends Record<string, unknown>>(
 
   if (!response.ok) {
     const error = await response.text();
-    throw new Error(`Firestore error: ${response.status} - ${error}`);
+    throw new FirestoreError(
+      'internal',
+      `Failed to set document: ${error}`,
+      response.status,
+    );
   }
 }
 
+/**
+ * Deletes a document from Firestore
+ *
+ * @param collection - Collection name
+ * @param docId - Document ID
+ * @throws {FirestoreError} On network or permission errors (not on 404)
+ */
 export async function deleteDoc(
   collection: string,
   docId: string,
@@ -285,10 +348,18 @@ export async function deleteDoc(
   });
 
   if (!response.ok && response.status !== 404) {
-    throw new Error(`Firestore error: ${response.status}`);
+    throw FirestoreError.fromStatus(response.status);
   }
 }
 
+/**
+ * Creates a new document with auto-generated ID
+ *
+ * @param collection - Collection name
+ * @param data - Document data
+ * @returns Object with the generated document ID
+ * @throws {FirestoreError} On network or permission errors
+ */
 export async function createDoc<T extends Record<string, unknown>>(
   collection: string,
   data: T,
@@ -296,7 +367,7 @@ export async function createDoc<T extends Record<string, unknown>>(
   const token = await getAccessToken();
   const url = `${getBaseUrl()}/${collection}`;
 
-  const fields: Record<string, unknown> = {};
+  const fields: Record<string, FirestoreValue> = {};
   for (const [k, v] of Object.entries(data)) {
     fields[k] = toFirestoreValue(v);
   }
@@ -312,43 +383,72 @@ export async function createDoc<T extends Record<string, unknown>>(
 
   if (!response.ok) {
     const error = await response.text();
-    throw new Error(`Firestore error: ${response.status} - ${error}`);
+    throw new FirestoreError(
+      'internal',
+      `Failed to create document: ${error}`,
+      response.status,
+    );
   }
 
   const result = (await response.json()) as { name: string };
-  // Extract doc ID from name: projects/{project}/databases/(default)/documents/{collection}/{docId}
   const id = result.name.split('/').pop()!;
   return { id };
 }
 
-export interface WhereClause {
-  field: string;
-  op: '==' | '<' | '<=' | '>' | '>=' | '!=' | 'in' | 'array-contains';
-  value: unknown;
-}
+/** Map query operators to Firestore REST API format */
+const OP_MAP: Record<WhereClause['op'], string> = {
+  '==': 'EQUAL',
+  '!=': 'NOT_EQUAL',
+  '<': 'LESS_THAN',
+  '<=': 'LESS_THAN_OR_EQUAL',
+  '>': 'GREATER_THAN',
+  '>=': 'GREATER_THAN_OR_EQUAL',
+  in: 'IN',
+  'not-in': 'NOT_IN',
+  'array-contains': 'ARRAY_CONTAINS',
+  'array-contains-any': 'ARRAY_CONTAINS_ANY',
+};
 
+/**
+ * Queries documents from a collection
+ *
+ * @param collection - Collection name
+ * @param where - Optional where clause
+ * @returns Array of matching documents
+ * @throws {FirestoreError} On network or permission errors
+ *
+ * @example
+ * ```typescript
+ * const todos = await queryDocs<Todo>('todos', {
+ *   field: 'userId',
+ *   op: '==',
+ *   value: 'user-123',
+ * });
+ * ```
+ */
 export async function queryDocs<T>(
   collection: string,
   where?: WhereClause,
 ): Promise<Array<{ id: string; data: T }>> {
   const token = await getAccessToken();
-  if (!config) throw new Error('Firestore not initialized');
+  if (!config) {
+    throw new FirestoreError('invalid-argument', 'Firestore not initialized');
+  }
 
   const url = `https://firestore.googleapis.com/v1/projects/${config.projectId}/databases/(default)/documents:runQuery`;
 
-  const opMap: Record<string, string> = {
-    '==': 'EQUAL',
-    '<': 'LESS_THAN',
-    '<=': 'LESS_THAN_OR_EQUAL',
-    '>': 'GREATER_THAN',
-    '>=': 'GREATER_THAN_OR_EQUAL',
-    '!=': 'NOT_EQUAL',
-    in: 'IN',
-    'array-contains': 'ARRAY_CONTAINS',
-  };
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const query: any = {
+  const query: {
+    structuredQuery: {
+      from: Array<{ collectionId: string }>;
+      where?: {
+        fieldFilter: {
+          field: { fieldPath: string };
+          op: string;
+          value: FirestoreValue;
+        };
+      };
+    };
+  } = {
     structuredQuery: {
       from: [{ collectionId: collection }],
     },
@@ -358,7 +458,7 @@ export async function queryDocs<T>(
     query.structuredQuery.where = {
       fieldFilter: {
         field: { fieldPath: where.field },
-        op: opMap[where.op],
+        op: OP_MAP[where.op],
         value: toFirestoreValue(where.value),
       },
     };
@@ -375,12 +475,14 @@ export async function queryDocs<T>(
 
   if (!response.ok) {
     const error = await response.text();
-    throw new Error(`Firestore error: ${response.status} - ${error}`);
+    throw new FirestoreError(
+      'internal',
+      `Query failed: ${error}`,
+      response.status,
+    );
   }
 
-  const results = (await response.json()) as Array<{
-    document?: { name: string; fields: Record<string, unknown> };
-  }>;
+  const results = (await response.json()) as QueryResponse[];
 
   return results
     .filter(r => r.document)
@@ -388,8 +490,10 @@ export async function queryDocs<T>(
       const doc = r.document!;
       const id = doc.name.split('/').pop()!;
       const data: Record<string, unknown> = {};
-      for (const [k, v] of Object.entries(doc.fields)) {
-        data[k] = fromFirestoreValue(v);
+      if (doc.fields) {
+        for (const [k, v] of Object.entries(doc.fields)) {
+          data[k] = fromFirestoreValue(v);
+        }
       }
       return { id, data: data as T };
     });
