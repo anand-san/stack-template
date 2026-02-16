@@ -33,6 +33,182 @@ import type {
 } from "./types";
 import { loadTasksDocument } from "./validate";
 
+type AgentName = "implementer" | "verifier" | "refactor" | "bug_fixer";
+type AgentMode = "mutating" | "read_only";
+type VerifierStatus = "DONE" | "REFACTOR" | "ISSUES";
+
+interface AgentSpec {
+  name: AgentName;
+  mode: AgentMode;
+  buildPrompt: (input: AgentPromptInput) => string;
+}
+
+interface AgentPromptInput {
+  planPath: string;
+  tasksPath: string;
+  phase: PlanPhase;
+  task: PlanTask;
+  attempt: number;
+  maxAttempts: number;
+  verifierCycle: number;
+  maxVerifierCycles: number;
+  notes: string[];
+  failureContext?: string;
+}
+
+interface AgentStepArtifacts {
+  logPath: string;
+  messagePath: string;
+  commitMessagePath: string;
+}
+
+interface ConventionalCommitMessage {
+  subject: string;
+  body: string;
+}
+
+interface VerifierDecision {
+  status: VerifierStatus;
+  notes: string[];
+}
+
+interface StepFailure {
+  category: TaskAttemptResult["failureCategory"];
+  details: string;
+}
+
+interface MutatingStepSuccess {
+  commitHash: string;
+  changedFiles: string[];
+}
+
+const MAX_VERIFIER_CYCLES = 5;
+
+const conventionalSubjectPattern =
+  /^(feat|fix|chore|docs|style|refactor|perf|test|build|ci|revert)\([a-z0-9._-]+\)!?: .+/i;
+
+const AGENTS: Record<AgentName, AgentSpec> = {
+  implementer: {
+    name: "implementer",
+    mode: "mutating",
+    buildPrompt: (input) =>
+      buildTaskPrompt({
+        planPath: input.planPath,
+        tasksPath: input.tasksPath,
+        phase: input.phase,
+        task: input.task,
+        attempt: input.attempt,
+        maxAttempts: input.maxAttempts,
+        failureContext:
+          input.failureContext && input.failureContext.length > 0
+            ? input.failureContext
+            : undefined,
+      }),
+  },
+  verifier: {
+    name: "verifier",
+    mode: "read_only",
+    buildPrompt: (input) => {
+      const notesBlock =
+        input.notes.length > 0
+          ? input.notes.map((note) => `- ${note}`).join("\n")
+          : "- (none)";
+      return [
+        "You are a verifier agent.",
+        `Read ${input.planPath} and ${input.tasksPath} before reviewing.`,
+        "Validate correctness, architecture fit, and production readiness for this task only.",
+        "Focus on functional correctness, regressions, edge cases, and scope alignment.",
+        "Return strict JSON only.",
+        "Required JSON shape:",
+        '{"status":"DONE|REFACTOR|ISSUES","notes":["..."]}',
+        "Rules:",
+        "- DONE: task is complete and safe to proceed.",
+        "- REFACTOR: implementation works but should be improved; include exact refactor notes.",
+        "- ISSUES: there are bugs or defects; include exact fix notes.",
+        "- notes must be concrete and actionable.",
+        "",
+        `Phase: ${input.phase.id} - ${input.phase.name}`,
+        `Phase goal: ${input.phase.goal}`,
+        `Task ID: ${input.task.id}`,
+        `Task title: ${input.task.title}`,
+        `Task description: ${input.task.description}`,
+        `Task notes: ${input.task.notes.length > 0 ? input.task.notes.join(" | ") : "None"}`,
+        `Task attempt: ${input.attempt}/${input.maxAttempts}`,
+        `Verifier cycle: ${input.verifierCycle}/${input.maxVerifierCycles}`,
+        "",
+        "Verifier notes from previous cycle:",
+        notesBlock,
+      ].join("\n");
+    },
+  },
+  refactor: {
+    name: "refactor",
+    mode: "mutating",
+    buildPrompt: (input) => {
+      const notesBlock =
+        input.notes.length > 0
+          ? input.notes.map((note) => `- ${note}`).join("\n")
+          : "- (none)";
+      return [
+        "You are a refactor agent.",
+        `Read ${input.planPath} and ${input.tasksPath} before making changes.`,
+        "Refactor only this task according to verifier notes.",
+        "Do not expand scope to other tasks.",
+        "",
+        `Phase: ${input.phase.id} - ${input.phase.name}`,
+        `Phase goal: ${input.phase.goal}`,
+        `Task ID: ${input.task.id}`,
+        `Task title: ${input.task.title}`,
+        `Task description: ${input.task.description}`,
+        `Task notes: ${input.task.notes.length > 0 ? input.task.notes.join(" | ") : "None"}`,
+        `Task attempt: ${input.attempt}/${input.maxAttempts}`,
+        `Verifier cycle: ${input.verifierCycle}/${input.maxVerifierCycles}`,
+        "",
+        "Refactor notes from verifier:",
+        notesBlock,
+        "",
+        "Required behavior:",
+        "- Apply exactly the requested refactors.",
+        "- Keep behavior correct and production-ready.",
+        "- Run relevant validations before finishing.",
+      ].join("\n");
+    },
+  },
+  bug_fixer: {
+    name: "bug_fixer",
+    mode: "mutating",
+    buildPrompt: (input) => {
+      const notesBlock =
+        input.notes.length > 0
+          ? input.notes.map((note) => `- ${note}`).join("\n")
+          : "- (none)";
+      return [
+        "You are a bug-fixer agent.",
+        `Read ${input.planPath} and ${input.tasksPath} before making changes.`,
+        "Fix only the issues reported by verifier for this task.",
+        "Do not expand scope to other tasks.",
+        "",
+        `Phase: ${input.phase.id} - ${input.phase.name}`,
+        `Phase goal: ${input.phase.goal}`,
+        `Task ID: ${input.task.id}`,
+        `Task title: ${input.task.title}`,
+        `Task description: ${input.task.description}`,
+        `Task notes: ${input.task.notes.length > 0 ? input.task.notes.join(" | ") : "None"}`,
+        `Task attempt: ${input.attempt}/${input.maxAttempts}`,
+        `Verifier cycle: ${input.verifierCycle}/${input.maxVerifierCycles}`,
+        "",
+        "Issue notes from verifier:",
+        notesBlock,
+        "",
+        "Required behavior:",
+        "- Fix the listed defects directly.",
+        "- Keep changes minimal and safe.",
+        "- Run relevant validations before finishing.",
+      ].join("\n");
+    },
+  },
+};
+
 function getTaskState(
   state: RunState,
   phaseId: string,
@@ -57,14 +233,6 @@ function getPhaseState(
   }
   return found;
 }
-
-interface ConventionalCommitMessage {
-  subject: string;
-  body: string;
-}
-
-const conventionalSubjectPattern =
-  /^(feat|fix|chore|docs|style|refactor|perf|test|build|ci|revert)\([a-z0-9._-]+\)!?: .+/i;
 
 async function runProcess(params: {
   cmd: string[];
@@ -147,57 +315,6 @@ async function appendLog(
   await appendFile(logPath, content, "utf8");
 }
 
-async function runCodexAttempt(params: {
-  rootDir: string;
-  prompt: string;
-  logPath: string;
-  messagePath: string;
-  model?: string;
-  sandbox?: "read-only" | "workspace-write" | "danger-full-access";
-  printLogs: boolean;
-}): Promise<ProcessResult> {
-  const args = [
-    "exec",
-    "--full-auto",
-    "-C",
-    params.rootDir,
-    "-o",
-    params.messagePath,
-  ];
-  if (params.model) {
-    args.push("-m", params.model);
-  }
-  if (params.sandbox) {
-    args.push("-s", params.sandbox);
-  }
-  args.push("-");
-
-  const result = await runProcess({
-    cmd: ["codex", ...args],
-    cwd: params.rootDir,
-    stdin: params.prompt,
-    streamOutput: params.printLogs,
-  });
-
-  await appendLog(
-    params.logPath,
-    "Codex Exec",
-    [
-      `Command: codex ${args.join(" ")}`,
-      "",
-      "STDOUT:",
-      result.stdout || "(empty)",
-      "",
-      "STDERR:",
-      result.stderr || "(empty)",
-      "",
-      `Exit Code: ${result.exitCode}`,
-    ].join("\n"),
-  );
-
-  return result;
-}
-
 function truncateText(input: string, maxChars: number): string {
   if (input.length <= maxChars) {
     return input;
@@ -231,13 +348,51 @@ function parseConventionalCommit(raw: string): ConventionalCommitMessage {
       `Invalid conventional commit subject generated by codex: ${subject}`,
     );
   }
-  if (/task-\d+/i.test(subject) || /phase-\d+/i.test(subject) || /ralph/i.test(subject)) {
+  if (
+    /task-\d+/i.test(subject) ||
+    /phase-\d+/i.test(subject) ||
+    /ralph/i.test(subject)
+  ) {
     throw new Error(
       `Commit subject contains forbidden token generated by codex: ${subject}`,
     );
   }
 
   return { subject, body };
+}
+
+function parseVerifierDecision(raw: string): VerifierDecision {
+  const candidate = extractJsonPayload(raw);
+  const parsed = JSON.parse(candidate) as {
+    status?: unknown;
+    notes?: unknown;
+  };
+
+  const rawStatus =
+    typeof parsed.status === "string" ? parsed.status.trim().toUpperCase() : "";
+
+  if (rawStatus !== "DONE" && rawStatus !== "REFACTOR" && rawStatus !== "ISSUES") {
+    throw new Error(`Invalid verifier status: ${rawStatus}`);
+  }
+
+  let notes: string[] = [];
+  if (Array.isArray(parsed.notes)) {
+    notes = parsed.notes
+      .filter((item): item is string => typeof item === "string")
+      .map((item) => item.trim())
+      .filter((item) => item.length > 0);
+  } else if (typeof parsed.notes === "string" && parsed.notes.trim().length > 0) {
+    notes = [parsed.notes.trim()];
+  }
+
+  if ((rawStatus === "REFACTOR" || rawStatus === "ISSUES") && notes.length === 0) {
+    throw new Error(`Verifier ${rawStatus} requires notes.`);
+  }
+
+  return {
+    status: rawStatus,
+    notes,
+  };
 }
 
 function buildCommitMessagePrompt(params: {
@@ -250,7 +405,8 @@ function buildCommitMessagePrompt(params: {
     params.changedFiles.length > 0
       ? params.changedFiles.map((file) => `- ${file}`).join("\n")
       : "- (none)";
-  const diffStat = params.diffStat.trim().length > 0 ? params.diffStat : "(empty)";
+  const diffStat =
+    params.diffStat.trim().length > 0 ? params.diffStat : "(empty)";
   const diffPatch =
     params.diffPatch.trim().length > 0 ? params.diffPatch : "(empty)";
 
@@ -280,32 +436,28 @@ function buildCommitMessagePrompt(params: {
   ].join("\n");
 }
 
-async function runCodexCommitMessage(params: {
+async function readOutputFileOrFallback(
+  outputPath: string,
+  fallback: string,
+): Promise<string> {
+  try {
+    return await readFile(outputPath, "utf8");
+  } catch {
+    return fallback;
+  }
+}
+
+async function runCodexExec(params: {
   rootDir: string;
+  prompt: string;
   logPath: string;
   outputPath: string;
-  task: PlanTask;
-  changedFiles: string[];
-  diffStat: string;
-  diffPatch: string;
   model?: string;
   sandbox?: "read-only" | "workspace-write" | "danger-full-access";
   printLogs: boolean;
-}): Promise<ConventionalCommitMessage> {
-  const prompt = buildCommitMessagePrompt({
-    task: params.task,
-    changedFiles: params.changedFiles,
-    diffStat: params.diffStat,
-    diffPatch: params.diffPatch,
-  });
-  const args = [
-    "exec",
-    "--full-auto",
-    "-C",
-    params.rootDir,
-    "-o",
-    params.outputPath,
-  ];
+  logTitle: string;
+}): Promise<{ result: ProcessResult; output: string }> {
+  const args = ["exec", "--full-auto", "-C", params.rootDir, "-o", params.outputPath];
   if (params.model) {
     args.push("-m", params.model);
   }
@@ -317,25 +469,20 @@ async function runCodexCommitMessage(params: {
   const result = await runProcess({
     cmd: ["codex", ...args],
     cwd: params.rootDir,
-    stdin: prompt,
+    stdin: params.prompt,
     streamOutput: params.printLogs,
   });
 
-  let rawMessage = "";
-  try {
-    rawMessage = await readFile(params.outputPath, "utf8");
-  } catch {
-    rawMessage = result.stdout;
-  }
+  const output = await readOutputFileOrFallback(params.outputPath, result.stdout);
 
   await appendLog(
     params.logPath,
-    "Codex Commit Message",
+    params.logTitle,
     [
       `Command: codex ${args.join(" ")}`,
       "",
-      "Codex Output:",
-      rawMessage || "(empty)",
+      "OUTPUT:",
+      output || "(empty)",
       "",
       "STDOUT:",
       result.stdout || "(empty)",
@@ -347,11 +494,7 @@ async function runCodexCommitMessage(params: {
     ].join("\n"),
   );
 
-  if (result.exitCode !== 0) {
-    throw new Error(`codex commit message generation failed (${result.exitCode})`);
-  }
-
-  return parseConventionalCommit(rawMessage);
+  return { result, output };
 }
 
 async function runQualityGates(params: {
@@ -381,6 +524,7 @@ async function runQualityGates(params: {
       cwd: step.cwd,
       streamOutput: params.printLogs,
     });
+
     await appendLog(
       params.logPath,
       `Quality Gate: ${step.name}`,
@@ -397,6 +541,7 @@ async function runQualityGates(params: {
         `Exit Code: ${result.exitCode}`,
       ].join("\n"),
     );
+
     if (result.exitCode !== 0) {
       return {
         passed: false,
@@ -411,6 +556,269 @@ async function runQualityGates(params: {
 
 function sanitizeForFilename(value: string): string {
   return value.replace(/[^a-zA-Z0-9._-]/g, "-");
+}
+
+function buildStepArtifacts(params: {
+  state: RunState;
+  phaseId: string;
+  taskId: string;
+  attempt: number;
+  stepSequence: number;
+  agent: AgentName;
+}): AgentStepArtifacts {
+  const safePhase = sanitizeForFilename(params.phaseId);
+  const safeTask = sanitizeForFilename(params.taskId);
+  const safeAgent = sanitizeForFilename(params.agent);
+  const safeStep = params.stepSequence.toString().padStart(2, "0");
+  const base = `${safeTask}.attempt-${params.attempt}.step-${safeStep}.${safeAgent}`;
+
+  return {
+    logPath: join(params.state.logDir, safePhase, `${base}.log`),
+    messagePath: join(params.state.messageDir, safePhase, `${base}.md`),
+    commitMessagePath: join(params.state.messageDir, safePhase, `${base}.commit.json`),
+  };
+}
+
+function buildAgentPrompt(
+  agent: AgentName,
+  input: AgentPromptInput,
+): string {
+  return AGENTS[agent].buildPrompt(input);
+}
+
+async function generateAndCommitMessage(params: {
+  rootDir: string;
+  logPath: string;
+  outputPath: string;
+  task: PlanTask;
+  changedFiles: string[];
+  model?: string;
+  sandbox?: "read-only" | "workspace-write" | "danger-full-access";
+  printLogs: boolean;
+}): Promise<string> {
+  await stageAll(params.rootDir);
+  const diffStat = await stagedDiffStat(params.rootDir);
+  const diffPatch = truncateText(await stagedDiff(params.rootDir), 12000);
+
+  const commitPrompt = buildCommitMessagePrompt({
+    task: params.task,
+    changedFiles: params.changedFiles,
+    diffStat,
+    diffPatch,
+  });
+
+  const commitResponse = await runCodexExec({
+    rootDir: params.rootDir,
+    prompt: commitPrompt,
+    logPath: params.logPath,
+    outputPath: params.outputPath,
+    model: params.model,
+    sandbox: params.sandbox,
+    printLogs: params.printLogs,
+    logTitle: "Codex Commit Message",
+  });
+
+  if (commitResponse.result.exitCode !== 0) {
+    throw new Error(
+      `codex commit message generation failed (${commitResponse.result.exitCode})`,
+    );
+  }
+
+  const commitMessage = parseConventionalCommit(commitResponse.output);
+  await commitStaged(commitMessage.subject, commitMessage.body, params.rootDir);
+  return headCommit(params.rootDir);
+}
+
+async function executeMutatingAgentStep(params: {
+  rootDir: string;
+  state: RunState;
+  statePath: string;
+  phase: PlanPhase;
+  task: PlanTask;
+  attempt: number;
+  maxAttempts: number;
+  verifierCycle: number;
+  notes: string[];
+  failureContext?: string;
+  agent: Extract<AgentName, "implementer" | "refactor" | "bug_fixer">;
+  artifacts: AgentStepArtifacts;
+  model?: string;
+  sandbox?: "read-only" | "workspace-write" | "danger-full-access";
+  skipQualityGates: boolean;
+  printLogs: boolean;
+}): Promise<{ ok: true; value: MutatingStepSuccess } | { ok: false; error: StepFailure }> {
+  const prompt = buildAgentPrompt(params.agent, {
+    planPath: params.state.planPath,
+    tasksPath: params.state.tasksPath,
+    phase: params.phase,
+    task: params.task,
+    attempt: params.attempt,
+    maxAttempts: params.maxAttempts,
+    verifierCycle: params.verifierCycle,
+    maxVerifierCycles: MAX_VERIFIER_CYCLES,
+    notes: params.notes,
+    failureContext: params.failureContext,
+  });
+
+  const response = await runCodexExec({
+    rootDir: params.rootDir,
+    prompt,
+    logPath: params.artifacts.logPath,
+    outputPath: params.artifacts.messagePath,
+    model: params.model,
+    sandbox: params.sandbox,
+    printLogs: params.printLogs,
+    logTitle: `Agent ${params.agent}`,
+  });
+
+  const taskState = getTaskState(params.state, params.phase.id, params.task.id);
+  taskState.lastLogPath = params.artifacts.logPath;
+  taskState.lastMessagePath = params.artifacts.messagePath;
+  taskState.lastCodexExitCode = response.result.exitCode;
+  await saveRunState(params.statePath, params.state);
+
+  if (response.result.exitCode !== 0) {
+    return {
+      ok: false,
+      error: {
+        category: "codex_error",
+        details: `codex ${params.agent} failed with code ${response.result.exitCode}`,
+      },
+    };
+  }
+
+  const changedFiles = await listChangedFiles(params.rootDir);
+  if (changedFiles.length === 0) {
+    await appendLog(
+      params.artifacts.logPath,
+      "Task Failure",
+      "No repository changes detected after agent step",
+    );
+    return {
+      ok: false,
+      error: {
+        category: "no_changes",
+        details: `No repository changes detected after ${params.agent}`,
+      },
+    };
+  }
+
+  if (!params.skipQualityGates) {
+    const qualityGate = await runQualityGates({
+      rootDir: params.rootDir,
+      logPath: params.artifacts.logPath,
+      printLogs: params.printLogs,
+    });
+
+    if (!qualityGate.passed) {
+      return {
+        ok: false,
+        error: {
+          category: "quality_gate",
+          details: qualityGate.details,
+        },
+      };
+    }
+  }
+
+  try {
+    const commitHash = await generateAndCommitMessage({
+      rootDir: params.rootDir,
+      logPath: params.artifacts.logPath,
+      outputPath: params.artifacts.commitMessagePath,
+      task: params.task,
+      changedFiles,
+      model: params.model,
+      sandbox: params.sandbox,
+      printLogs: params.printLogs,
+    });
+
+    return {
+      ok: true,
+      value: {
+        commitHash,
+        changedFiles,
+      },
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      error: {
+        category: "git_conflict",
+        details: error instanceof Error ? error.message : String(error),
+      },
+    };
+  }
+}
+
+async function executeVerifierStep(params: {
+  rootDir: string;
+  state: RunState;
+  statePath: string;
+  phase: PlanPhase;
+  task: PlanTask;
+  attempt: number;
+  maxAttempts: number;
+  verifierCycle: number;
+  notes: string[];
+  artifacts: AgentStepArtifacts;
+  model?: string;
+  printLogs: boolean;
+}): Promise<{ ok: true; value: VerifierDecision } | { ok: false; error: StepFailure }> {
+  const prompt = buildAgentPrompt("verifier", {
+    planPath: params.state.planPath,
+    tasksPath: params.state.tasksPath,
+    phase: params.phase,
+    task: params.task,
+    attempt: params.attempt,
+    maxAttempts: params.maxAttempts,
+    verifierCycle: params.verifierCycle,
+    maxVerifierCycles: MAX_VERIFIER_CYCLES,
+    notes: params.notes,
+  });
+
+  const response = await runCodexExec({
+    rootDir: params.rootDir,
+    prompt,
+    logPath: params.artifacts.logPath,
+    outputPath: params.artifacts.messagePath,
+    model: params.model,
+    sandbox: "read-only",
+    printLogs: params.printLogs,
+    logTitle: "Agent verifier",
+  });
+
+  const taskState = getTaskState(params.state, params.phase.id, params.task.id);
+  taskState.lastLogPath = params.artifacts.logPath;
+  taskState.lastMessagePath = params.artifacts.messagePath;
+  taskState.lastCodexExitCode = response.result.exitCode;
+  await saveRunState(params.statePath, params.state);
+
+  if (response.result.exitCode !== 0) {
+    return {
+      ok: false,
+      error: {
+        category: "codex_error",
+        details: `codex verifier failed with code ${response.result.exitCode}`,
+      },
+    };
+  }
+
+  try {
+    const decision = parseVerifierDecision(response.output);
+    return { ok: true, value: decision };
+  } catch (error) {
+    return {
+      ok: false,
+      error: {
+        category: "codex_error",
+        details:
+          error instanceof Error
+            ? `invalid verifier response: ${error.message}`
+            : `invalid verifier response: ${String(error)}`,
+      },
+    };
+  }
 }
 
 async function executeTaskWithRetry(params: {
@@ -438,123 +846,134 @@ async function executeTaskWithRetry(params: {
     taskState.attempts = nextAttempt;
     taskState.lastError = undefined;
     taskState.lastQualityGate = undefined;
+    taskState.changedFiles = [];
     await saveRunState(params.statePath, params.state);
 
-    const safePhase = sanitizeForFilename(params.phase.id);
-    const safeTask = sanitizeForFilename(params.task.id);
-    const logPath = join(
-      params.state.logDir,
-      safePhase,
-      `${safeTask}.attempt-${nextAttempt}.log`,
-    );
-    const messagePath = join(
-      params.state.messageDir,
-      safePhase,
-      `${safeTask}.attempt-${nextAttempt}.md`,
-    );
-    const commitMessagePath = join(
-      params.state.messageDir,
-      safePhase,
-      `${safeTask}.commit-message.attempt-${nextAttempt}.json`,
-    );
+    let stepSequence = 0;
+    let verifierCycle = 0;
+    let notesFromVerifier: string[] = [];
+    let nextAgent: AgentName = "implementer";
+    let latestCommitHash: string | undefined;
+    const changedFilesSet = new Set<string>();
+    let stepFailure: StepFailure | undefined;
 
-    const prompt = buildTaskPrompt({
-      planPath: params.state.planPath,
-      tasksPath: params.state.tasksPath,
-      phase: params.phase,
-      task: params.task,
-      attempt: nextAttempt,
-      maxAttempts,
-      failureContext: lastFailure.length > 0 ? lastFailure : undefined,
-    });
+    while (true) {
+      if (nextAgent === "verifier") {
+        verifierCycle += 1;
+        if (verifierCycle > MAX_VERIFIER_CYCLES) {
+          stepFailure = {
+            category: "codex_error",
+            details: `Verifier exceeded max cycles (${MAX_VERIFIER_CYCLES})`,
+          };
+          break;
+        }
 
-    const codexResult = await runCodexAttempt({
-      rootDir: params.rootDir,
-      prompt,
-      logPath,
-      messagePath,
-      model: params.model,
-      sandbox: params.sandbox,
-      printLogs: params.printLogs,
-    });
+        stepSequence += 1;
+        const artifacts = buildStepArtifacts({
+          state: params.state,
+          phaseId: params.phase.id,
+          taskId: params.task.id,
+          attempt: nextAttempt,
+          stepSequence,
+          agent: "verifier",
+        });
 
-    taskState.lastLogPath = logPath;
-    taskState.lastMessagePath = messagePath;
-    taskState.lastCodexExitCode = codexResult.exitCode;
-    await saveRunState(params.statePath, params.state);
+        const verifierResult = await executeVerifierStep({
+          rootDir: params.rootDir,
+          state: params.state,
+          statePath: params.statePath,
+          phase: params.phase,
+          task: params.task,
+          attempt: nextAttempt,
+          maxAttempts,
+          verifierCycle,
+          notes: notesFromVerifier,
+          artifacts,
+          model: params.model,
+          printLogs: params.printLogs,
+        });
 
-    if (codexResult.exitCode !== 0) {
-      taskState.status = "failed";
-      taskState.lastError = `codex exec failed with code ${codexResult.exitCode}`;
-      lastFailure = taskState.lastError;
-      await saveRunState(params.statePath, params.state);
-      continue;
-    }
+        if (!verifierResult.ok) {
+          stepFailure = verifierResult.error;
+          break;
+        }
 
-    const changedFiles = await listChangedFiles(params.rootDir);
-    taskState.changedFiles = changedFiles;
-    if (changedFiles.length === 0) {
-      taskState.status = "failed";
-      taskState.lastError =
-        "No repository changes detected after codex attempt";
-      lastFailure = taskState.lastError;
-      await saveRunState(params.statePath, params.state);
-      await appendLog(logPath, "Task Failure", taskState.lastError);
-      continue;
-    }
+        if (verifierResult.value.status === "DONE") {
+          taskState.status = "passed";
+          taskState.lastCommit = latestCommitHash;
+          taskState.lastError = undefined;
+          taskState.changedFiles = [...changedFilesSet];
+          await saveRunState(params.statePath, params.state);
+          return {
+            success: true,
+            commitHash: latestCommitHash,
+            changedFiles: [...changedFilesSet],
+          };
+        }
 
-    if (!params.skipQualityGates) {
-      const qualityGate = await runQualityGates({
-        rootDir: params.rootDir,
-        logPath,
-        printLogs: params.printLogs,
-      });
-      if (!qualityGate.passed) {
-        taskState.status = "failed";
-        taskState.lastQualityGate = qualityGate.failedStep;
-        taskState.lastError = qualityGate.details;
-        lastFailure = `Quality gate failed at ${qualityGate.failedStep}: ${qualityGate.details}`;
-        await saveRunState(params.statePath, params.state);
+        notesFromVerifier = verifierResult.value.notes;
+        nextAgent =
+          verifierResult.value.status === "REFACTOR" ? "refactor" : "bug_fixer";
         continue;
       }
-    }
 
-    try {
-      await stageAll(params.rootDir);
-      const diffStat = await stagedDiffStat(params.rootDir);
-      const diffPatch = truncateText(await stagedDiff(params.rootDir), 12000);
-      const commitMessage = await runCodexCommitMessage({
+      stepSequence += 1;
+      const artifacts = buildStepArtifacts({
+        state: params.state,
+        phaseId: params.phase.id,
+        taskId: params.task.id,
+        attempt: nextAttempt,
+        stepSequence,
+        agent: nextAgent,
+      });
+
+      const mutatingResult = await executeMutatingAgentStep({
         rootDir: params.rootDir,
-        logPath,
-        outputPath: commitMessagePath,
+        state: params.state,
+        statePath: params.statePath,
+        phase: params.phase,
         task: params.task,
-        changedFiles,
-        diffStat,
-        diffPatch,
+        attempt: nextAttempt,
+        maxAttempts,
+        verifierCycle,
+        notes: notesFromVerifier,
+        failureContext: nextAgent === "implementer" ? lastFailure : undefined,
+        agent: nextAgent,
+        artifacts,
         model: params.model,
         sandbox: params.sandbox,
+        skipQualityGates: params.skipQualityGates,
         printLogs: params.printLogs,
       });
-      await commitStaged(
-        commitMessage.subject,
-        commitMessage.body,
-        params.rootDir,
-      );
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      taskState.status = "failed";
-      taskState.lastError = message;
-      lastFailure = `git commit failed: ${message}`;
-      await saveRunState(params.statePath, params.state);
-      continue;
+
+      if (!mutatingResult.ok) {
+        stepFailure = mutatingResult.error;
+        break;
+      }
+
+      latestCommitHash = mutatingResult.value.commitHash;
+      for (const file of mutatingResult.value.changedFiles) {
+        changedFilesSet.add(file);
+      }
+      notesFromVerifier = [];
+      nextAgent = "verifier";
     }
 
-    const commitHash = await headCommit(params.rootDir);
-    taskState.status = "passed";
-    taskState.lastCommit = commitHash;
-    taskState.lastError = undefined;
+    if (!stepFailure) {
+      stepFailure = {
+        category: "codex_error",
+        details: "Task step failed with unknown state",
+      };
+    }
+
+    taskState.status = "failed";
+    taskState.lastError = stepFailure.details;
+    if (stepFailure.category === "quality_gate") {
+      taskState.lastQualityGate = "quality_gate";
+    }
+    taskState.changedFiles = [...changedFilesSet];
     await saveRunState(params.statePath, params.state);
-    return { success: true, commitHash, changedFiles };
+    lastFailure = stepFailure.details;
   }
 
   return {
