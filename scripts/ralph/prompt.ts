@@ -20,8 +20,11 @@ export function buildTaskPrompt(input: PromptInput): string {
     : "";
 
   return [
-    "You are Ralph, a long-running implementation agent for this repository.",
-    "Implement exactly one task from docs/ideation/tasks.json and stop when done.",
+    `- Read ${input.planPath} to understand the bigger plan for the app `,
+    `- Read ${input.tasksPath} to understand all tasks that the team is working on.`,
+    `"We are working in phase: ${input.phase.id} - ${input.phase.name}"`,
+    `"The goal of this phase is: ${input.phase.goal}"`,
+    "Under current phase, I have this task that I would like to implement",
     "",
     `Task ID: ${input.task.id}`,
     `Task Title: ${input.task.title}`,
@@ -32,10 +35,7 @@ export function buildTaskPrompt(input: PromptInput): string {
     `Attempt: ${input.attempt}/${input.maxAttempts}`,
     "",
     "Required behavior:",
-    `- Read ${input.planPath} and ${input.tasksPath} for context.`,
     "- Implement only this task. Do not start any other task.",
-    "- Use Bun workspace conventions in this repository.",
-    "- Do not use TypeScript any type.",
     "- Keep changes scoped and production-ready.",
     "- Run required validations for this task before finishing.",
     "- In final response, include: summary, files changed, tests/checks run, unresolved risks.",

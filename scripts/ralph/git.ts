@@ -104,9 +104,33 @@ export async function listChangedFiles(cwd: string): Promise<string[]> {
   return parseChangedFilesFromPorcelain(output);
 }
 
-export async function commitAll(message: string, cwd: string): Promise<void> {
+export async function stageAll(cwd: string): Promise<void> {
   await runGitOrThrow(["add", "-A"], cwd);
-  await runGitOrThrow(["commit", "-m", message], cwd);
+}
+
+export async function stagedDiff(cwd: string): Promise<string> {
+  const result = await runGitOrThrow(["diff", "--cached", "--no-color"], cwd);
+  return result.stdout;
+}
+
+export async function stagedDiffStat(cwd: string): Promise<string> {
+  const result = await runGitOrThrow(
+    ["diff", "--cached", "--stat", "--no-color"],
+    cwd,
+  );
+  return result.stdout;
+}
+
+export async function commitStaged(
+  subject: string,
+  body: string,
+  cwd: string,
+): Promise<void> {
+  if (body.trim().length === 0) {
+    await runGitOrThrow(["commit", "-m", subject], cwd);
+    return;
+  }
+  await runGitOrThrow(["commit", "-m", subject, "-m", body], cwd);
 }
 
 export async function headCommit(cwd: string): Promise<string> {
