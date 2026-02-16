@@ -7,6 +7,28 @@ describe("parseRunnerOptions", () => {
     expect(options.command).toBe("start");
     expect(options.retry).toBe(1);
     expect(options.allowDirty).toBe(false);
+    expect(options.printLogs).toBe(true);
+  });
+
+  it("supports --silent to disable live logs", () => {
+    const options = parseRunnerOptions(["start", "--silent"]);
+    expect(options.printLogs).toBe(false);
+  });
+
+  it("uses last flag when both --silent and --print-logs are provided", () => {
+    const silentThenPrint = parseRunnerOptions([
+      "start",
+      "--silent",
+      "--print-logs",
+    ]);
+    const printThenSilent = parseRunnerOptions([
+      "start",
+      "--print-logs",
+      "--silent",
+    ]);
+
+    expect(silentThenPrint.printLogs).toBe(true);
+    expect(printThenSilent.printLogs).toBe(false);
   });
 
   it("requires state on resume", () => {

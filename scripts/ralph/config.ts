@@ -26,7 +26,7 @@ export function parseRunnerOptions(argv: string[]): RunnerOptions {
   let model: string | undefined;
   let sandbox: RunnerOptions["sandbox"];
   let skipQualityGates = false;
-  let printLogs = false;
+  let printLogs = true;
 
   for (let i = 1; i < argv.length; i += 1) {
     const arg = argv[i];
@@ -45,6 +45,10 @@ export function parseRunnerOptions(argv: string[]): RunnerOptions {
     }
     if (arg === "--print-logs") {
       printLogs = true;
+      continue;
+    }
+    if (arg === "--silent") {
+      printLogs = false;
       continue;
     }
 

@@ -7,7 +7,8 @@ Here is the current Ralph flow, end-to-end, based on `scripts/ralph`.
    From `scripts/ralph/config.ts`:
 
 - loads defaults
-- applies flags (`--max-phases`, `--max-tasks`, `--model`, `--sandbox`, `--dry-run`, etc.)
+- applies flags (`--max-phases`, `--max-tasks`, `--model`, `--sandbox`, `--dry-run`, `--silent`, etc.)
+- logs stream to terminal by default (use `--silent` to hide live logs)
 - `--retry 1` means up to 2 attempts per task
 
 3. Preflight

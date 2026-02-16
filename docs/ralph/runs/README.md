@@ -16,10 +16,10 @@ bun run ralph:start -- --plan docs/ideation/PLAN.md --tasks docs/ideation/tasks.
 
 Run from `main`. Ralph will refuse to start from any other branch.
 
-Start with live terminal logs:
+Logs stream to terminal by default. To run quietly:
 
 ```bash
-bun run ralph:start -- --plan docs/ideation/PLAN.md --tasks docs/ideation/tasks.json --retry 1 --print-logs
+bun run ralph:start -- --plan docs/ideation/PLAN.md --tasks docs/ideation/tasks.json --retry 1 --silent
 ```
 
 Resume a run:
