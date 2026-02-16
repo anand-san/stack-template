@@ -55,3 +55,8 @@ Output:
 
 - Frontend: `dist/frontend/` (static files)
 - Server: `dist/index.js` (bundled)
+
+### YOLO Mode
+
+1. Generate a plan and tasks under docs/ideation/ for your idea using skill `$ideation-bootstrap-planner`
+2. Run ralph on the plan using `bun run ralph:start -- --plan docs/ideation/PLAN.md --tasks docs/ideation/tasks.json --retry 5 --print-logs`
