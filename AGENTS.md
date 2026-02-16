@@ -4,25 +4,11 @@
 
 This repository is a Bun workspace monorepo with three packages:
 
-- `frontend/`: React 19 + Vite + Tailwind app. Main code is in `frontend/src` (`components/`, `pages/`, `context/`, `hooks/`, `api/`), static assets in `frontend/public`.
-- `server/`: Hono API running on Bun. Core areas include `routes/`, `middlewares/`, `services/`, and `custom-modules/`.
-- `shared/`: shared types and base configs (`shared/types`, `shared/config`).
+- `frontend/`: React 19 + Vite + Tailwind w Shadcn. Read `docs/ai/frontend.md` for more info
+- `server/`: Hono API running on Bun. Read `docs/ai/server.md` for more info
+- `shared/`: shared types and base configs. Read `docs/ai/shared.md` for more info
 
 Build output goes to `dist/`. Project docs live under `docs/`.
-
-## Build, Test, and Development Commands
-
-Use Bun (not npm):
-
-- `bun install`: install workspace dependencies.
-- `bun run dev`: run frontend and server together.
-- `bun run frontend:dev` / `bun run server:dev`: run a single app.
-- `bun run build`: build all packages.
-- `bun run test`: run server and frontend tests.
-- `bun run lint`: run Prettier checks + ESLint.
-- `bun run format`: apply Prettier + ESLint fixes.
-- `cd frontend && bun run check-types`
-- `cd server && bun run check-types`
 
 ## Coding Style
 
@@ -32,7 +18,7 @@ Use Bun (not npm):
 - Formatting/linting is enforced with Prettier + ESLint (root and package configs). Run formatting and type checks before opening a PR.
 
 - Run `bun run format` once a task is complete
-- Commit small changes iteratively
+- Commit incrementally, commit small
 
 ## Naming Conventions
 

@@ -178,3 +178,5 @@ todo.md
 temp_md/
 
 **/*.env
+
+docs/ideation/*

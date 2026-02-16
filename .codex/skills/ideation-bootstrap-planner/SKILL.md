@@ -9,8 +9,8 @@ Turn a raw idea into a practical execution plan for this repository.
 
 Produce two files at project root:
 
-- `PLAN.md`: phase-by-phase implementation plan.
-- `tasks.json`: machine-readable task list grouped by phase.
+- `docs/ideation/PLAN.md`: phase-by-phase implementation plan.
+- `docs/ideation/tasks.json`: machine-readable task list grouped by phase.
 
 Use this repository's architecture and commands, not generic templates.
 
