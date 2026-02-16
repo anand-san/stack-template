@@ -25,7 +25,6 @@ export function parseRunnerOptions(argv: string[]): RunnerOptions {
   let allowDirty = false;
   let model: string | undefined;
   let sandbox: RunnerOptions["sandbox"];
-  let branchPrefix = "ralph";
   let skipQualityGates = false;
   let printLogs = false;
 
@@ -77,8 +76,6 @@ export function parseRunnerOptions(argv: string[]): RunnerOptions {
         throw new Error(`Invalid sandbox mode: ${next}`);
       }
       sandbox = next;
-    } else if (arg === "--branch-prefix") {
-      branchPrefix = next;
     } else {
       throw new Error(`Unknown option: ${arg}`);
     }
@@ -111,7 +108,6 @@ export function parseRunnerOptions(argv: string[]): RunnerOptions {
     allowDirty,
     model,
     sandbox,
-    branchPrefix,
     skipQualityGates,
     printLogs,
   };

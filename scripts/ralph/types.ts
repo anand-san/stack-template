@@ -89,7 +89,6 @@ export interface RunnerOptions {
   allowDirty: boolean;
   model?: string;
   sandbox?: "read-only" | "workspace-write" | "danger-full-access";
-  branchPrefix: string;
   skipQualityGates: boolean;
   printLogs: boolean;
 }

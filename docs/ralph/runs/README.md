@@ -13,6 +13,8 @@ Start a run:
 bun run ralph:start -- --plan docs/ideation/PLAN.md --tasks docs/ideation/tasks.json --retry 1
 ```
 
+Run from `main`. Ralph will refuse to start from any other branch.
+
 Start with live terminal logs:
 
 ```bash

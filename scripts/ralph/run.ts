@@ -2,10 +2,7 @@ import { appendFile, mkdir, writeFile } from "node:fs/promises";
 import { basename, dirname, join, resolve } from "node:path";
 import { parseRunnerOptions } from "./config";
 import {
-  branchExists,
-  checkoutBranch,
   commitAll,
-  createBranch,
   currentBranch,
   ensureCleanWorkingTree,
   ensureGitRepo,
@@ -59,7 +56,7 @@ function getPhaseState(
 }
 
 function taskCommitMessage(task: PlanTask): string {
-  return `feat(ralph): ${task.id} ${task.title}`;
+  return task.title.trim();
 }
 
 async function runProcess(params: {
@@ -565,14 +562,13 @@ async function main(): Promise<void> {
 
   if (options.command === "start") {
     const runId = buildRunId();
-    const branch = `${options.branchPrefix}/${runId}`;
-    const paths = buildRunPaths(runId);
-
-    if (await branchExists(branch, rootDir)) {
-      throw new Error(`Branch already exists: ${branch}`);
+    const branch = await currentBranch(rootDir);
+    if (branch !== "main") {
+      throw new Error(
+        `Ralph start must run on main. Current branch is ${branch}.`,
+      );
     }
-
-    await createBranch(branch, rootDir);
+    const paths = buildRunPaths(runId);
 
     state = createInitialRunState({
       runId,
@@ -597,7 +593,9 @@ async function main(): Promise<void> {
     await ensureRunDirectories(state);
     const branch = await currentBranch(rootDir);
     if (branch !== state.branch) {
-      await checkoutBranch(state.branch, rootDir);
+      throw new Error(
+        `Resume must run on ${state.branch}. Current branch is ${branch}.`,
+      );
     }
   }
 
