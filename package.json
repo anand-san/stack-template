@@ -23,8 +23,6 @@
     "test": "bun run test:server && bun run test:frontend",
     "test:server": "cd server && bun test",
     "test:frontend": "cd frontend && bun run test",
-    "ralph:start": "bun scripts/ralph/run.ts start",
-    "ralph:resume": "bun scripts/ralph/run.ts resume",
     "prepare": "husky"
   },
   "devDependencies": {

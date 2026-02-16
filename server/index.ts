@@ -10,10 +10,8 @@ const ServeEnv = z.object({
 });
 const ProcessEnv = ServeEnv.parse(process.env);
 
-const server = Bun.serve({
+Bun.serve({
   port: ProcessEnv.PORT,
   hostname: '0.0.0.0',
   fetch: app.fetch,
 });
-
-console.log('server running', server.port);

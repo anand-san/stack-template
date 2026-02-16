@@ -19,6 +19,7 @@ Build output goes to `dist/`. Project docs live under `docs/`.
 
 - Write tests first before writing a feature
 - Run `bun run format` once a task is complete
+- Make sure `bun run check-types` script passes in both `frontend` and `server`
 - Commit incrementally, commit small
 
 ## Design

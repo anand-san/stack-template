@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { sendHello } from '../api/hello';
 import { Button } from '@/components/ui/button';
 import { Hand, Loader2 } from 'lucide-react';
-import { useAuth } from '@/context/auth/AuthContextProvider';
+import { useAuth } from '@/context/auth/useAuth';
 
 export default function Home() {
   const { user } = useAuth();

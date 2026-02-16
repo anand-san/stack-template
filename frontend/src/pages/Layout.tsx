@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { LogOutIcon } from 'lucide-react';
 import { Outlet } from 'react-router-dom';
 import SignIn from '@/components/auth/SignIn';
-import { useAuth } from '@/context/auth/AuthContextProvider';
+import { useAuth } from '@/context/auth/useAuth';
 import { FullScreenLoader } from '@/components/loader';
 
 export const AppLayout = () => {

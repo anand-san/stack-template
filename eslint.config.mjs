@@ -7,6 +7,12 @@ export default [
     ...frontendConfig,
   },
   {
+    files: ["frontend/src/__tests__/**/*.{ts,tsx}"],
+    rules: {
+      "react-refresh/only-export-components": "off",
+    },
+  },
+  {
     files: ["server/**/*.ts"],
     ...serverConfig,
   },
