@@ -13,6 +13,12 @@ Start a run:
 bun run ralph:start -- --plan docs/ideation/PLAN.md --tasks docs/ideation/tasks.json --retry 1
 ```
 
+Start with live terminal logs:
+
+```bash
+bun run ralph:start -- --plan docs/ideation/PLAN.md --tasks docs/ideation/tasks.json --retry 1 --print-logs
+```
+
 Resume a run:
 
 ```bash

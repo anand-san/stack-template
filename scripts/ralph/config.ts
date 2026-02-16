@@ -27,6 +27,7 @@ export function parseRunnerOptions(argv: string[]): RunnerOptions {
   let sandbox: RunnerOptions["sandbox"];
   let branchPrefix = "ralph";
   let skipQualityGates = false;
+  let printLogs = false;
 
   for (let i = 1; i < argv.length; i += 1) {
     const arg = argv[i];
@@ -41,6 +42,10 @@ export function parseRunnerOptions(argv: string[]): RunnerOptions {
     }
     if (arg === "--skip-quality-gates") {
       skipQualityGates = true;
+      continue;
+    }
+    if (arg === "--print-logs") {
+      printLogs = true;
       continue;
     }
 
@@ -108,5 +113,6 @@ export function parseRunnerOptions(argv: string[]): RunnerOptions {
     sandbox,
     branchPrefix,
     skipQualityGates,
+    printLogs,
   };
 }

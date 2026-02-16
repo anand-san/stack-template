@@ -66,6 +66,7 @@ async function runProcess(params: {
   cmd: string[];
   cwd: string;
   stdin?: string;
+  streamOutput?: boolean;
 }): Promise<ProcessResult> {
   const proc = Bun.spawn(params.cmd, {
     cwd: params.cwd,
@@ -79,9 +80,47 @@ async function runProcess(params: {
     proc.stdin.end();
   }
 
+  const readStream = async (
+    stream: ReadableStream<Uint8Array> | null,
+    writer?: (chunk: string) => void,
+  ): Promise<string> => {
+    if (!stream) {
+      return "";
+    }
+    const reader = stream.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+    while (true) {
+      const chunk = await reader.read();
+      if (chunk.done) {
+        break;
+      }
+      const text = decoder.decode(chunk.value, { stream: true });
+      buffer += text;
+      if (writer) {
+        writer(text);
+      }
+    }
+    const tail = decoder.decode();
+    if (tail.length > 0) {
+      buffer += tail;
+      if (writer) {
+        writer(tail);
+      }
+    }
+    return buffer;
+  };
+
+  const writeStdout = params.streamOutput
+    ? (chunk: string) => process.stdout.write(chunk)
+    : undefined;
+  const writeStderr = params.streamOutput
+    ? (chunk: string) => process.stderr.write(chunk)
+    : undefined;
+
   const [stdout, stderr, exitCode] = await Promise.all([
-    proc.stdout ? new Response(proc.stdout).text() : Promise.resolve(""),
-    proc.stderr ? new Response(proc.stderr).text() : Promise.resolve(""),
+    readStream(proc.stdout, writeStdout),
+    readStream(proc.stderr, writeStderr),
     proc.exited,
   ]);
 
@@ -111,6 +150,7 @@ async function runCodexAttempt(params: {
   messagePath: string;
   model?: string;
   sandbox?: "read-only" | "workspace-write" | "danger-full-access";
+  printLogs: boolean;
 }): Promise<ProcessResult> {
   const args = [
     "exec",
@@ -132,6 +172,7 @@ async function runCodexAttempt(params: {
     cmd: ["codex", ...args],
     cwd: params.rootDir,
     stdin: params.prompt,
+    streamOutput: params.printLogs,
   });
 
   await appendLog(
@@ -156,6 +197,7 @@ async function runCodexAttempt(params: {
 async function runQualityGates(params: {
   rootDir: string;
   logPath: string;
+  printLogs: boolean;
 }): Promise<{ passed: boolean; failedStep?: string; details: string }> {
   const steps: Array<{ name: string; cmd: string[]; cwd: string }> = [
     { name: "format", cmd: ["bun", "run", "format"], cwd: params.rootDir },
@@ -174,7 +216,11 @@ async function runQualityGates(params: {
   ];
 
   for (const step of steps) {
-    const result = await runProcess({ cmd: step.cmd, cwd: step.cwd });
+    const result = await runProcess({
+      cmd: step.cmd,
+      cwd: step.cwd,
+      streamOutput: params.printLogs,
+    });
     await appendLog(
       params.logPath,
       `Quality Gate: ${step.name}`,
@@ -217,6 +263,7 @@ async function executeTaskWithRetry(params: {
   model?: string;
   sandbox?: "read-only" | "workspace-write" | "danger-full-access";
   skipQualityGates: boolean;
+  printLogs: boolean;
 }): Promise<TaskAttemptResult> {
   const taskState = getTaskState(params.state, params.phase.id, params.task.id);
   const maxAttempts = params.retryLimit + 1;
@@ -263,6 +310,7 @@ async function executeTaskWithRetry(params: {
       messagePath,
       model: params.model,
       sandbox: params.sandbox,
+      printLogs: params.printLogs,
     });
 
     taskState.lastLogPath = logPath;
@@ -294,6 +342,7 @@ async function executeTaskWithRetry(params: {
       const qualityGate = await runQualityGates({
         rootDir: params.rootDir,
         logPath,
+        printLogs: params.printLogs,
       });
       if (!qualityGate.passed) {
         taskState.status = "failed";
@@ -448,6 +497,7 @@ async function executeRun(params: {
         model: params.options.model,
         sandbox: params.options.sandbox,
         skipQualityGates: params.options.skipQualityGates,
+        printLogs: params.options.printLogs,
       });
 
       if (!attempt.success) {

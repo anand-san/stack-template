@@ -91,6 +91,7 @@ export interface RunnerOptions {
   sandbox?: "read-only" | "workspace-write" | "danger-full-access";
   branchPrefix: string;
   skipQualityGates: boolean;
+  printLogs: boolean;
 }
 
 export interface ProcessResult {
