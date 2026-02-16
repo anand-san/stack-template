@@ -5,6 +5,7 @@ alwaysApply: false
 
 - Frontend monorepo package is available under @frontend.
 - Uses shadcn/ui with Radix primitives. Components are in @frontend/src/components/ui/. Add new shadcn components as needed using the shadcn cli. (npx shadcn@latest add <component-name>). Do not add any manual component unless required.
+- Use Shadcn MCP server if needed to get more info on components and usage
 
 ## Type-Safe API Communication
 

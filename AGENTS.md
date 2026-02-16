@@ -17,8 +17,15 @@ Build output goes to `dist/`. Project docs live under `docs/`.
 - TypeScript is strict; keep types explicit and avoid `any`.
 - Formatting/linting is enforced with Prettier + ESLint (root and package configs). Run formatting and type checks before opening a PR.
 
+- Write tests first before writing a feature
 - Run `bun run format` once a task is complete
 - Commit incrementally, commit small
+
+## Design
+
+- Minimalist approach
+- Clean and Elegant
+- Follow apple design principles
 
 ## Naming Conventions
 
