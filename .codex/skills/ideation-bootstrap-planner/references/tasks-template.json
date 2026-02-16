@@ -1,0 +1,29 @@
+{
+  "phases": [
+    {
+      "id": "phase-1",
+      "name": "Foundation and Scope Lock",
+      "goal": "Define MVP scope and scaffold core architecture",
+      "exitCriteria": [
+        "Core contracts and server skeleton are complete.",
+        "Phase tests and typechecks pass."
+      ],
+      "tasks": [
+        {
+          "id": "task-001",
+          "status": "todo",
+          "title": "Define shared contracts for core entities",
+          "description": "Create initial domain types and request/response contracts used by frontend and server.",
+          "notes": [""]
+        },
+        {
+          "id": "task-002",
+          "status": "todo",
+          "title": "Create initial Hono routes for MVP flow",
+          "description": "Add core endpoints and wire route registration in server app.",
+          "notes": [""]
+        }
+      ]
+    }
+  ]
+}
