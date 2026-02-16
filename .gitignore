@@ -182,3 +182,5 @@ temp_md/
 docs/ralph/runs/*
 !docs/ralph/runs/.gitkeep
 !docs/ralph/runs/README.md
+
+docs/ideation/*
