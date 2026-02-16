@@ -207,9 +207,7 @@ export function setUser(user: SentryUser | null): void {
 /**
  * Parse a stack trace into Sentry frame format
  */
-function parseStackTrace(
-  stack: string,
-): Array<{
+function parseStackTrace(stack: string): Array<{
   filename?: string;
   lineno?: number;
   colno?: number;
