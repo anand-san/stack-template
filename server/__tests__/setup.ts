@@ -1,7 +1,19 @@
 import { mock } from 'bun:test';
 import { mockAuth, mockFirestore, MockTimestamp } from './mocks/firebase-admin';
 
-// Mock the lightweight firebase services
+mock.module('../env', () => ({
+  default: {
+    PORT: '3000',
+    SENTRY_ENABLED: 'false',
+    SENTRY_DSN: '',
+    SENTRY_ENVIRONMENT: 'test',
+    FIREBASE_PROJECT_ID: 'test-project',
+    FIREBASE_CLIENT_EMAIL: 'test@test.iam.gserviceaccount.com',
+    FIREBASE_PRIVATE_KEY: 'test-private-key',
+    FRONTEND_URL: 'http://localhost:5173',
+  },
+}));
+
 mock.module('../services/firebase', () => ({
   adminAuth: mockAuth,
   firestore: mockFirestore,
