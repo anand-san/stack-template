@@ -1,5 +1,18 @@
+import {
+  mkdirSync,
+  writeFileSync as fsWrite,
+  existsSync,
+  rmSync as fsRm,
+} from "node:fs";
+import { join } from "node:path";
 import { describe, expect, test } from "bun:test";
-import { removeMarkerBlocks, replaceScope, uncommentMarkerBlock } from "./init";
+import {
+  removeMarkerBlocks,
+  replaceScope,
+  uncommentMarkerBlock,
+  removeFiles,
+  removeDirs,
+} from "./init";
 
 describe("removeMarkerBlocks", () => {
   test("removes content between markers inclusive", () => {
@@ -72,5 +85,40 @@ describe("uncommentMarkerBlock", () => {
 // @init:no-firebase-end`;
     const result = uncommentMarkerBlock(input, "no-firebase");
     expect(result).toBe("const client = hc<ApiRoutes>(baseUrl);\n");
+  });
+});
+
+describe("removeFiles", () => {
+  const tmpDir = join(import.meta.dir, ".test-tmp");
+
+  test("removes listed files", () => {
+    mkdirSync(tmpDir, { recursive: true });
+    const f1 = join(tmpDir, "a.ts");
+    const f2 = join(tmpDir, "b.ts");
+    fsWrite(f1, "content");
+    fsWrite(f2, "content");
+
+    removeFiles([f1, f2]);
+    expect(existsSync(f1)).toBe(false);
+    expect(existsSync(f2)).toBe(false);
+
+    fsRm(tmpDir, { recursive: true, force: true });
+  });
+
+  test("skips non-existent files without error", () => {
+    expect(() => removeFiles(["/nonexistent/file.ts"])).not.toThrow();
+  });
+});
+
+describe("removeDirs", () => {
+  const tmpDir = join(import.meta.dir, ".test-tmp-dirs");
+
+  test("removes listed directories recursively", () => {
+    const subDir = join(tmpDir, "sub");
+    mkdirSync(subDir, { recursive: true });
+    fsWrite(join(subDir, "file.ts"), "content");
+
+    removeDirs([tmpDir]);
+    expect(existsSync(tmpDir)).toBe(false);
   });
 });
