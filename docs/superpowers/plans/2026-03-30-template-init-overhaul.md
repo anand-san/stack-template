@@ -1738,7 +1738,8 @@ async function collectConfig(
   console.log("\n🔧 Stack Template Init\n");
 
   const projectName = await prompt(rl, "Project name", dirName);
-  const scope = await prompt(rl, "Package scope", `@${projectName}`);
+  let scope = await prompt(rl, "Package scope", `@${projectName}`);
+  if (!scope.startsWith("@")) scope = `@${scope}`;
   const domain = await prompt(rl, "Domain (for CORS)", `${projectName}.dev`);
   const includeFirebase = await promptYesNo(rl, "Include Firebase auth?", true);
   const includeSentry = await promptYesNo(rl, "Include Sentry?", true);
@@ -1862,6 +1863,13 @@ async function main(): Promise<void> {
   if (!config.includeFirebase) {
     console.log("  Removing Firebase auth...");
     removeFirebase(ROOT);
+  } else {
+    const clientPath = join(ROOT, "frontend/src/api/client.ts");
+    if (existsSync(clientPath)) {
+      let content = readFileSync(clientPath, "utf-8");
+      content = removeMarkerBlocks(content, "no-firebase");
+      writeFileSync(clientPath, content);
+    }
   }
 
   if (!config.includeSentry) {
@@ -2015,7 +2023,17 @@ for firebase in true false; do
             includeSampleCode: $sample,
             includeDocker: $docker,
           };
-          if (!config.includeFirebase) removeFirebase(root);
+          import { removeMarkerBlocks, existsSync, readFileSync, writeFileSync } from './scripts/init.ts';
+          if (!config.includeFirebase) {
+            removeFirebase(root);
+          } else {
+            const clientPath = root + '/frontend/src/api/client.ts';
+            if (existsSync(clientPath)) {
+              let c = readFileSync(clientPath, 'utf-8');
+              c = removeMarkerBlocks(c, 'no-firebase');
+              writeFileSync(clientPath, c);
+            }
+          }
           if (!config.includeSentry) removeSentry(root);
           if (!config.includeSampleCode) removeSampleCode(root, config.includeFirebase);
           if (!config.includeDocker) removeDocker(root);
@@ -2024,6 +2042,8 @@ for firebase in true false; do
           updateDomain(root, config.domain);
           generateEnvFiles(root, config);
           regenerateDocs(root, config);
+          cleanupCleanVariants(root);
+          cleanupRemainingMarkers(root);
         " 2>&1
 
         if bun install --frozen-lockfile 2>/dev/null || bun install 2>&1; then
