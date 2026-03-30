@@ -110,6 +110,8 @@ Files requiring markers:
 **Sentry removal deletes:**
 
 - `server/custom-modules/sentry/`
+- `@sentry/react` from `frontend/package.json`
+- Sentry-related dependencies from `server/package.json` (if any)
 
 **Sentry removal edits (via markers):**
 
