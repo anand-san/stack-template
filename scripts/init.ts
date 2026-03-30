@@ -270,7 +270,7 @@ export function renameScope(root: string, newScope: string): void {
 
   const scopeFiles = findFilesWithPattern(
     root,
-    [".ts", ".tsx", ".mjs", ".json"],
+    [".ts", ".tsx", ".mjs", ".json", ".md"],
     oldScope,
   );
 
