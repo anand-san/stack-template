@@ -13,6 +13,8 @@ import {
   removeFiles,
   removeDirs,
   removeDocker,
+  updateDomain,
+  updateProjectName,
 } from "./init";
 
 describe("removeMarkerBlocks", () => {
@@ -142,6 +144,49 @@ describe("removeDocker", () => {
     expect(existsSync(join(tmpDir, "railway.json"))).toBe(false);
     expect(existsSync(join(tmpDir, ".dockerignore"))).toBe(false);
     expect(existsSync(join(tmpDir, "deployments"))).toBe(false);
+
+    fsRm(tmpDir, { recursive: true, force: true });
+  });
+});
+
+describe("updateDomain", () => {
+  const tmpDir = join(import.meta.dir, ".test-domain");
+
+  test("replaces domain in server/app.ts", () => {
+    mkdirSync(join(tmpDir, "server"), { recursive: true });
+    fsWrite(
+      join(tmpDir, "server/app.ts"),
+      `if (origin.endsWith('.sandilya.dev')) {`,
+    );
+
+    updateDomain(tmpDir, "myapp.dev");
+
+    const content = require("fs").readFileSync(
+      join(tmpDir, "server/app.ts"),
+      "utf-8",
+    );
+    expect(content).toContain(".myapp.dev");
+    expect(content).not.toContain(".sandilya.dev");
+
+    fsRm(tmpDir, { recursive: true, force: true });
+  });
+
+  test("replaces domain in frontend/index.html", () => {
+    mkdirSync(join(tmpDir, "frontend"), { recursive: true });
+    fsWrite(
+      join(tmpDir, "frontend/index.html"),
+      `<meta property="og:url" content="https://sandilya.dev" />
+<meta property="twitter:domain" content="sandilya.dev" />`,
+    );
+
+    updateDomain(tmpDir, "cool.app");
+
+    const content = require("fs").readFileSync(
+      join(tmpDir, "frontend/index.html"),
+      "utf-8",
+    );
+    expect(content).toContain("cool.app");
+    expect(content).not.toContain("sandilya.dev");
 
     fsRm(tmpDir, { recursive: true, force: true });
   });

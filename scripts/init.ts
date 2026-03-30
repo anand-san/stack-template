@@ -263,3 +263,64 @@ export function findFilesWithPattern(
   walk(dir);
   return results;
 }
+
+export function renameScope(root: string, newScope: string): void {
+  const oldScope = "@sandilya-stack";
+
+  const scopeFiles = findFilesWithPattern(
+    root,
+    [".ts", ".tsx", ".mjs", ".json"],
+    oldScope,
+  );
+
+  for (const f of scopeFiles) {
+    processFileScope(f, oldScope, newScope);
+  }
+
+  const typesDecl = join(root, "shared/types.d.ts");
+  if (existsSync(typesDecl)) {
+    processFileScope(typesDecl, oldScope, newScope);
+  }
+}
+
+export function updateProjectName(root: string, projectName: string): void {
+  const rootPkg = join(root, "package.json");
+  if (existsSync(rootPkg)) {
+    const pkg = JSON.parse(readFileSync(rootPkg, "utf-8"));
+    pkg.name = projectName;
+    writeFileSync(rootPkg, JSON.stringify(pkg, null, 2) + "\n");
+  }
+
+  const readmePath = join(root, "README.md");
+  if (existsSync(readmePath)) {
+    let content = readFileSync(readmePath, "utf-8");
+    content = content.replace(/^# .+$/m, `# ${projectName}`);
+    writeFileSync(readmePath, content);
+  }
+
+  updateHtml(root, projectName);
+}
+
+function updateHtml(root: string, projectName: string): void {
+  const htmlPath = join(root, "frontend/index.html");
+  if (!existsSync(htmlPath)) return;
+  let content = readFileSync(htmlPath, "utf-8");
+  content = content.replaceAll("Sandilya Stack", projectName);
+  writeFileSync(htmlPath, content);
+}
+
+export function updateDomain(root: string, domain: string): void {
+  const appTs = join(root, "server/app.ts");
+  if (existsSync(appTs)) {
+    let content = readFileSync(appTs, "utf-8");
+    content = content.replace(".sandilya.dev", `.${domain}`);
+    writeFileSync(appTs, content);
+  }
+
+  const htmlPath = join(root, "frontend/index.html");
+  if (existsSync(htmlPath)) {
+    let content = readFileSync(htmlPath, "utf-8");
+    content = content.replaceAll("sandilya.dev", domain);
+    writeFileSync(htmlPath, content);
+  }
+}
