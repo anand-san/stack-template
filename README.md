@@ -1,6 +1,6 @@
 # Stack Template
 
-A modern full-stack monorepo template using Bun, React 19, Hono, and Firebase.
+A modern full-stack monorepo template using Bun, React 19, Hono, and Firebase. Scaffold new projects with a single command.
 
 ## Tech Stack
 
@@ -14,30 +14,39 @@ A modern full-stack monorepo template using Bun, React 19, Hono, and Firebase.
 | Auth       | Firebase Authentication        |
 | UI         | shadcn/ui + Radix              |
 
-## Getting Started
-
-### Prerequisites
-
-- [Bun](https://bun.sh/) (v1.3+)
-- Firebase project with Firestore and Authentication enabled
-
-### Installation
+## Quick Start
 
 ```bash
+git clone git@github.com:anand-san/stack-template.git my-new-app
+cd my-new-app
 bun install
+bun run init
 ```
 
-### Environment Setup
+The init script walks you through project setup:
 
-**Frontend** (`frontend/.env`):
+- **Project name** and **package scope** — renames `@sandilya-stack` everywhere
+- **Domain** — updates CORS config and meta tags
+- **Firebase auth** — include or remove (auth context, middleware, Firebase client)
+- **Sentry** — include or remove (error tracking, logger integration)
+- **Sample code** — keep the todos/hello examples or start clean
+- **Docker/deployment** — keep or remove Dockerfiles, nginx config, Railway config
 
-- Copy `.env.example` to `.env` and fill in the values
+After setup, you get a clean project with passing tests, tailored docs, and a fresh git history.
 
-**Server** (`server/.env`):
+Use `bun run init -- --dry-run` to preview changes without modifying anything.
 
-- Copy `.env.example` to `.env` and fill in the values
+## Project Structure
 
-### Development
+```
+├── frontend/     React 19 + Vite + Tailwind + shadcn/ui
+├── server/       Hono API server running on Bun
+├── shared/       Shared types, Zod schemas, and config
+├── scripts/      Init script (removed after setup)
+└── docs/ai/      Documentation for AI-assisted development
+```
+
+## Development
 
 ```bash
 bun run dev          # Runs both frontend and server
@@ -45,7 +54,15 @@ bun run frontend:dev # Frontend only (port 5173)
 bun run server:dev   # Server only (port 3000)
 ```
 
-### Build
+## Testing
+
+```bash
+bun run test         # Run all tests
+bun run test:server  # Server tests only (bun:test)
+bun run test:frontend # Frontend tests only (Vitest)
+```
+
+## Build
 
 ```bash
 bun run build        # Builds both packages
@@ -56,7 +73,14 @@ Output:
 - Frontend: `dist/frontend/` (static files)
 - Server: `dist/index.js` (bundled)
 
-### YOLO Mode
+## Environment Setup
 
-1. Generate a plan and tasks under docs/ideation/ for your idea using skill `$ideation-bootstrap-planner`
-2. Run ralph on the plan using `bun run ralph:start -- --plan docs/ideation/PLAN.md --tasks docs/ideation/tasks.json --retry 5 --print-logs`
+After running `bun run init`, `.env` and `.env.example` files are generated for both `frontend/` and `server/` with the correct variables for your selected features. Update them with your actual credentials.
+
+## Documentation
+
+- `CLAUDE.md` — project overview and coding guidelines
+- `docs/ai/patterns.md` — how to add routes, schemas, services, pages, and tests
+- `docs/ai/frontend.md` — frontend architecture and testing
+- `docs/ai/server.md` — server architecture and testing
+- `docs/ai/authentication.md` — Firebase auth flow (if included)
