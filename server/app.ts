@@ -2,10 +2,14 @@ import { Hono, type Context } from 'hono';
 import { logger } from 'hono/logger';
 import { cors } from 'hono/cors';
 import { HTTPException } from 'hono/http-exception';
+// @init:sample-start
 import { helloRoute } from './routes/hello';
 import { todosRoute } from './routes/todos';
+// @init:sample-end
 import env from './env';
+// @init:firebase-start
 import { authenticateUser } from './middlewares/auth/getUser';
+// @init:firebase-end
 const app = new Hono();
 
 app.onError((err: unknown, ctx: Context) => {
@@ -17,7 +21,9 @@ app.onError((err: unknown, ctx: Context) => {
 
 // Middlwares
 app.use('*', logger());
+// @init:firebase-start
 app.use('/api/*', authenticateUser);
+// @init:firebase-end
 app.use(
   '*',
   cors({
@@ -47,9 +53,9 @@ app.use(
 const apiRoutes = app
   .get('/health', c => c.text('OK', 201))
   .basePath('/api')
+  // @init:sample-start
   .route('/hello', helloRoute)
-  // Note: This is just a sample route to demonstrate basic usage of services while templating
   .route('/todos', todosRoute);
-
+// @init:sample-end
 export default app;
 export type ApiRoutes = typeof apiRoutes;
