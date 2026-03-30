@@ -480,6 +480,56 @@ function generateServerDoc(root: string, config: InitConfig): void {
   writeFileSync(join(root, "docs/ai/server.md"), content);
 }
 
+export function generateEnvFiles(root: string, config: InitConfig): void {
+  generateFrontendEnv(root, config);
+  generateServerEnv(root, config);
+}
+
+function generateFrontendEnv(root: string, config: InitConfig): void {
+  let content = `VITE_API_ENDPOINT=http://localhost:3000\n`;
+
+  if (config.includeFirebase) {
+    content += `VITE_FIREBASE_API_KEY=your-api-key
+VITE_FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com
+VITE_FIREBASE_PROJECT_ID=your-project-id
+VITE_FIREBASE_APP_ID=your-app-id
+`;
+  }
+
+  if (config.includeSentry) {
+    content += `VITE_SENTRY_ENABLED=false
+VITE_SENTRY_DSN=
+VITE_SENTRY_ENVIRONMENT=development
+`;
+  }
+
+  writeFileSync(join(root, "frontend/.env.example"), content);
+  writeFileSync(join(root, "frontend/.env"), content);
+}
+
+function generateServerEnv(root: string, config: InitConfig): void {
+  let content = `PORT=3000
+FRONTEND_URL=http://localhost:5173
+`;
+
+  if (config.includeFirebase) {
+    content += `FIREBASE_PROJECT_ID=your-project-id
+FIREBASE_CLIENT_EMAIL=your-service-account@your-project.iam.gserviceaccount.com
+FIREBASE_PRIVATE_KEY="your-private-key"
+`;
+  }
+
+  if (config.includeSentry) {
+    content += `SENTRY_ENABLED=false
+SENTRY_DSN=
+SENTRY_ENVIRONMENT=development
+`;
+  }
+
+  writeFileSync(join(root, "server/.env.example"), content);
+  writeFileSync(join(root, "server/.env"), content);
+}
+
 export function updateDomain(root: string, domain: string): void {
   const appTs = join(root, "server/app.ts");
   if (existsSync(appTs)) {
