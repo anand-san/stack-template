@@ -204,12 +204,17 @@ export function removeSampleCode(root: string, includeFirebase: boolean): void {
 
   removeDirs([join(root, "server/services/firestoreDemo")]);
 
-  const markerFiles = [
-    join(root, "server/app.ts"),
-    join(root, "shared/types/index.ts"),
-  ];
-  for (const f of markerFiles) {
-    removeFeatureMarkers(f, "sample");
+  removeFeatureMarkers(join(root, "server/app.ts"), "sample");
+  removeFeatureMarkers(join(root, "shared/types/index.ts"), "sample");
+
+  const appTsPath = join(root, "server/app.ts");
+  if (existsSync(appTsPath)) {
+    let content = readFileSync(appTsPath, "utf-8");
+    content = content.replace(
+      /\.basePath\('\/api'\)\s*\n(export default)/,
+      ".basePath('/api');\n$1",
+    );
+    writeFileSync(appTsPath, content);
   }
 
   if (includeFirebase) {
