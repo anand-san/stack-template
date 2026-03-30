@@ -309,6 +309,177 @@ function updateHtml(root: string, projectName: string): void {
   writeFileSync(htmlPath, content);
 }
 
+export function regenerateDocs(root: string, config: InitConfig): void {
+  const patternsPath = join(root, "docs/ai/patterns.md");
+  if (existsSync(patternsPath)) {
+    let content = readFileSync(patternsPath, "utf-8");
+    if (!config.includeFirebase) {
+      const htmlFirebasePattern =
+        /^[ \t]*<!-- @init:firebase-start -->\s*\n[\s\S]*?^[ \t]*<!-- @init:firebase-end -->\s*\n?/gm;
+      content = content.replace(htmlFirebasePattern, "");
+      const htmlNoFirebasePattern =
+        /^[ \t]*<!-- @init:no-firebase-start -->\s*\n([\s\S]*?)^[ \t]*<!-- @init:no-firebase-end -->\s*\n?/gm;
+      content = content.replace(htmlNoFirebasePattern, "$1");
+    } else {
+      const htmlNoFirebasePattern =
+        /^[ \t]*<!-- @init:no-firebase-start -->\s*\n[\s\S]*?^[ \t]*<!-- @init:no-firebase-end -->\s*\n?/gm;
+      content = content.replace(htmlNoFirebasePattern, "");
+      const htmlFirebaseMarkers =
+        /^[ \t]*<!-- @init:firebase-(?:start|end) -->\s*\n?/gm;
+      content = content.replace(htmlFirebaseMarkers, "");
+    }
+    content = content.replace(/\n{3,}/g, "\n\n").trim() + "\n";
+    writeFileSync(patternsPath, content);
+  }
+
+  generateClaudeMd(root, config);
+  generateFrontendDoc(root, config);
+  generateServerDoc(root, config);
+
+  if (!config.includeFirebase) {
+    removeFiles([join(root, "docs/ai/authentication.md")]);
+  }
+}
+
+function generateClaudeMd(root: string, config: InitConfig): void {
+  const features: string[] = [];
+  if (config.includeFirebase) features.push("Firebase Authentication");
+  if (config.includeSentry) features.push("Sentry Error Tracking");
+  if (config.includeDocker) features.push("Docker Deployment");
+
+  const docLinks = [
+    "- Frontend: docs/ai/frontend.md",
+    "- Server: docs/ai/server.md",
+    "- Shared: docs/ai/shared.md",
+    "- Development Patterns: docs/ai/patterns.md",
+  ];
+  if (config.includeFirebase) {
+    docLinks.push("- Authentication: docs/ai/authentication.md");
+  }
+
+  const content = `This is a full-stack monorepo using Bun as the runtime. It contains three packages:
+
+- frontend/: React 19 + Vite + Tailwind + shadcn/ui
+- server/: Hono API server running on Bun
+- shared/: Shared types, Zod schemas, and config used by both frontend and server
+
+${features.length > 0 ? `Includes: ${features.join(", ")}\n` : ""}
+## Documentation
+
+${docLinks.join("\n")}
+
+## Coding Workflow
+
+- TypeScript strict mode; avoid \`any\` types
+- Write tests first (TDD recommended)
+- Server tests: \`cd server && bun test\` (bun:test)
+- Frontend tests: \`cd frontend && bun run test\` (Vitest + React Testing Library)
+- Use conventional commit format (feat, fix, chore, etc.)
+- Run \`bun run format\` before opening a PR
+- Run \`bun run check-types\` in both frontend/ and server/ directories
+- Keep commits atomic and focused
+
+## Naming Conventions
+
+- React components: PascalCase (e.g., SignIn.tsx)
+- Hooks: useXxx camelCase (e.g., useGoogleAuth.ts)
+- Route/service modules: lowercase descriptive names (e.g., todos.ts, firebase.ts)
+
+## Design Principles
+
+- Minimalist, clean, elegant
+- Follow Apple design principles
+- Use shadcn/ui components where possible (npx shadcn@latest add <component>)
+
+## Available Scripts
+
+- \`bun run dev\` — run frontend + server
+- \`bun run test\` — run all tests
+- \`bun run build\` — build both packages
+- \`bun run format\` — format code
+- \`bun run lint\` — lint code
+`;
+
+  writeFileSync(join(root, "CLAUDE.md"), content);
+}
+
+function generateFrontendDoc(root: string, config: InitConfig): void {
+  let content = `# Frontend
+
+- React 19 + Vite + Tailwind CSS + shadcn/ui
+- Components in \`frontend/src/components/ui/\`. Add new ones: \`npx shadcn@latest add <component-name>\`
+
+## Type-Safe API Communication
+
+- Uses Hono client (\`hono/client\`) with types exported from the server (\`ApiRoutes\`)
+- Client configured in \`frontend/src/api/client.ts\`
+- All API calls are fully typed without manual type definitions
+`;
+
+  if (config.includeFirebase) {
+    content += `- Authentication header is automatically added to all API calls by the client
+
+## Authentication
+
+- Firebase Authentication with email and Google sign-in
+- Auth context in \`frontend/src/context/auth/\`
+- Protected routes via Layout component
+- See docs/ai/authentication.md for full flow
+`;
+  }
+
+  content += `
+## Tests
+
+- Vitest + React Testing Library
+- Tests in \`frontend/src/__tests__/\`
+- Run: \`cd frontend && bun run test\`
+- Watch: \`cd frontend && bun run test:watch\`
+- Coverage: \`cd frontend && bun run test:coverage\`
+`;
+
+  writeFileSync(join(root, "docs/ai/frontend.md"), content);
+}
+
+function generateServerDoc(root: string, config: InitConfig): void {
+  let content = `# Server
+
+- Hono API server running on Bun
+- Routes in \`server/routes/\`, services in \`server/services/\`
+- Zod schemas for request validation live in the shared package
+`;
+
+  if (config.includeFirebase) {
+    content += `
+## Firebase
+
+- Uses a lightweight custom REST client (not firebase-admin) in \`server/custom-modules/firebase/\`
+- Auth middleware in \`server/middlewares/auth/\` verifies Bearer tokens
+- Routes under \`/api/*\` are automatically protected
+`;
+  }
+
+  if (config.includeSentry) {
+    content += `
+## Error Tracking
+
+- Sentry integration via lightweight client in \`server/custom-modules/sentry/\`
+- Logger service in \`server/services/logger/\` wraps Sentry calls
+`;
+  }
+
+  content += `
+## Tests
+
+- Bun test runner (\`bun:test\`)
+- Tests in \`server/__tests__/\`
+- Run: \`cd server && bun test\`
+- Watch: \`cd server && bun test --watch\`
+`;
+
+  writeFileSync(join(root, "docs/ai/server.md"), content);
+}
+
 export function updateDomain(root: string, domain: string): void {
   const appTs = join(root, "server/app.ts");
   if (existsSync(appTs)) {
