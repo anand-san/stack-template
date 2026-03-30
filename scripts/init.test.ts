@@ -12,6 +12,7 @@ import {
   uncommentMarkerBlock,
   removeFiles,
   removeDirs,
+  removeDocker,
 } from "./init";
 
 describe("removeMarkerBlocks", () => {
@@ -120,5 +121,28 @@ describe("removeDirs", () => {
 
     removeDirs([tmpDir]);
     expect(existsSync(tmpDir)).toBe(false);
+  });
+});
+
+describe("removeDocker", () => {
+  const tmpDir = join(import.meta.dir, ".test-docker");
+
+  test("removes docker-related files and dirs", () => {
+    mkdirSync(join(tmpDir, "deployments"), { recursive: true });
+    fsWrite(join(tmpDir, "Dockerfile.frontend"), "FROM node");
+    fsWrite(join(tmpDir, "Dockerfile.server"), "FROM node");
+    fsWrite(join(tmpDir, "railway.json"), "{}");
+    fsWrite(join(tmpDir, ".dockerignore"), "*");
+    fsWrite(join(tmpDir, "deployments/nginx.conf"), "server {}");
+
+    removeDocker(tmpDir);
+
+    expect(existsSync(join(tmpDir, "Dockerfile.frontend"))).toBe(false);
+    expect(existsSync(join(tmpDir, "Dockerfile.server"))).toBe(false);
+    expect(existsSync(join(tmpDir, "railway.json"))).toBe(false);
+    expect(existsSync(join(tmpDir, ".dockerignore"))).toBe(false);
+    expect(existsSync(join(tmpDir, "deployments"))).toBe(false);
+
+    fsRm(tmpDir, { recursive: true, force: true });
   });
 });

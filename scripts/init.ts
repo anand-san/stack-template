@@ -92,6 +92,151 @@ export function processFileScope(
   }
 }
 
+export interface InitConfig {
+  projectName: string;
+  scope: string;
+  domain: string;
+  includeFirebase: boolean;
+  includeSentry: boolean;
+  includeSampleCode: boolean;
+  includeDocker: boolean;
+}
+
+export function removeFirebase(root: string): void {
+  removeDirs([
+    join(root, "frontend/src/context/auth"),
+    join(root, "frontend/src/components/auth"),
+    join(root, "server/middlewares/auth"),
+    join(root, "server/custom-modules/firebase"),
+  ]);
+
+  removeFiles([
+    join(root, "frontend/src/lib/firebase.ts"),
+    join(root, "server/services/firebase.ts"),
+    join(root, "docs/ai/authentication.md"),
+    join(root, "server/__tests__/mocks/firebase-admin.ts"),
+    join(root, "server/__tests__/setup.ts"),
+  ]);
+
+  const markerFiles = [
+    join(root, "server/app.ts"),
+    join(root, "server/env.ts"),
+    join(root, "frontend/src/main.tsx"),
+    join(root, "frontend/src/vite-env.d.ts"),
+  ];
+  for (const f of markerFiles) {
+    removeFeatureMarkers(f, "firebase");
+  }
+
+  replaceFile(
+    join(root, "frontend/src/pages/Layout.tsx"),
+    join(root, "frontend/src/pages/Layout.clean.tsx"),
+  );
+
+  const clientPath = join(root, "frontend/src/api/client.ts");
+  if (existsSync(clientPath)) {
+    let content = readFileSync(clientPath, "utf-8");
+    content = removeMarkerBlocks(content, "firebase");
+    content = uncommentMarkerBlock(content, "no-firebase");
+    content = removeMarkerBlocks(content, "no-firebase");
+    writeFileSync(clientPath, content);
+  }
+
+  removeFirebaseDeps(root);
+}
+
+function removeFirebaseDeps(root: string): void {
+  const pkgPath = join(root, "frontend/package.json");
+  if (!existsSync(pkgPath)) return;
+  const pkg = JSON.parse(readFileSync(pkgPath, "utf-8"));
+  const firebaseDeps = ["firebase"];
+  for (const dep of firebaseDeps) {
+    delete pkg.dependencies?.[dep];
+    delete pkg.devDependencies?.[dep];
+  }
+  writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + "\n");
+}
+
+export function removeSentry(root: string): void {
+  removeDirs([join(root, "server/custom-modules/sentry")]);
+
+  const markerFiles = [
+    join(root, "server/env.ts"),
+    join(root, "frontend/src/vite-env.d.ts"),
+  ];
+  for (const f of markerFiles) {
+    removeFeatureMarkers(f, "sentry");
+  }
+
+  replaceFile(
+    join(root, "server/services/logger/loggerService.ts"),
+    join(root, "server/services/logger/loggerService.clean.ts"),
+  );
+
+  replaceFile(
+    join(root, "frontend/src/utils/logger.ts"),
+    join(root, "frontend/src/utils/logger.clean.ts"),
+  );
+
+  removeSentryDeps(root);
+}
+
+function removeSentryDeps(root: string): void {
+  const frontendPkgPath = join(root, "frontend/package.json");
+  if (existsSync(frontendPkgPath)) {
+    const pkg = JSON.parse(readFileSync(frontendPkgPath, "utf-8"));
+    delete pkg.dependencies?.["@sentry/react"];
+    writeFileSync(frontendPkgPath, JSON.stringify(pkg, null, 2) + "\n");
+  }
+}
+
+export function removeSampleCode(root: string, includeFirebase: boolean): void {
+  removeFiles([
+    join(root, "server/routes/hello.ts"),
+    join(root, "server/routes/todos.ts"),
+    join(root, "shared/types/sampleSchema.ts"),
+    join(root, "shared/types/todos.ts"),
+    join(root, "frontend/src/api/hello.ts"),
+    join(root, "server/__tests__/routes/todos.test.ts"),
+    join(root, "frontend/src/__tests__/pages/Home.test.tsx"),
+  ]);
+
+  removeDirs([join(root, "server/services/firestoreDemo")]);
+
+  const markerFiles = [
+    join(root, "server/app.ts"),
+    join(root, "shared/types/index.ts"),
+  ];
+  for (const f of markerFiles) {
+    removeFeatureMarkers(f, "sample");
+  }
+
+  if (includeFirebase) {
+    replaceFile(
+      join(root, "frontend/src/pages/Home.tsx"),
+      join(root, "frontend/src/pages/Home.clean-with-auth.tsx"),
+    );
+    removeFiles([join(root, "frontend/src/pages/Home.clean.tsx")]);
+  } else {
+    replaceFile(
+      join(root, "frontend/src/pages/Home.tsx"),
+      join(root, "frontend/src/pages/Home.clean.tsx"),
+    );
+    removeFiles([join(root, "frontend/src/pages/Home.clean-with-auth.tsx")]);
+  }
+}
+
+export function removeDocker(root: string): void {
+  removeFiles([
+    join(root, "Dockerfile.frontend"),
+    join(root, "Dockerfile.server"),
+    join(root, "railway.json"),
+    join(root, ".dockerignore"),
+  ]);
+
+  removeDirs([join(root, "deployments")]);
+}
+
 export function findFilesWithPattern(
   dir: string,
   extensions: string[],
