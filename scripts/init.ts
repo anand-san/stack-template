@@ -6,7 +6,8 @@ import {
   readdirSync,
   statSync,
 } from "node:fs";
-import { join, resolve } from "node:path";
+import { basename, join, resolve } from "node:path";
+import { createInterface } from "node:readline/promises";
 
 const ROOT = resolve(import.meta.dir, "..");
 
@@ -544,4 +545,255 @@ export function updateDomain(root: string, domain: string): void {
     content = content.replaceAll("sandilya.dev", domain);
     writeFileSync(htmlPath, content);
   }
+}
+
+async function prompt(
+  rl: ReturnType<typeof createInterface>,
+  question: string,
+  defaultValue: string,
+): Promise<string> {
+  const answer = await rl.question(`${question} [${defaultValue}]: `);
+  return answer.trim() || defaultValue;
+}
+
+async function promptYesNo(
+  rl: ReturnType<typeof createInterface>,
+  question: string,
+  defaultYes: boolean,
+): Promise<boolean> {
+  const hint = defaultYes ? "Y/n" : "y/N";
+  const answer = await rl.question(`${question} [${hint}]: `);
+  const trimmed = answer.trim().toLowerCase();
+  if (trimmed === "") return defaultYes;
+  return trimmed === "y" || trimmed === "yes";
+}
+
+async function collectConfig(
+  rl: ReturnType<typeof createInterface>,
+): Promise<InitConfig> {
+  const dirName = basename(ROOT);
+
+  console.log("\n🔧 Stack Template Init\n");
+
+  const projectName = await prompt(rl, "Project name", dirName);
+  let scope = await prompt(rl, "Package scope", `@${projectName}`);
+  if (!scope.startsWith("@")) scope = `@${scope}`;
+  const domain = await prompt(rl, "Domain (for CORS)", `${projectName}.dev`);
+  const includeFirebase = await promptYesNo(rl, "Include Firebase auth?", true);
+  const includeSentry = await promptYesNo(rl, "Include Sentry?", true);
+  const includeSampleCode = await promptYesNo(
+    rl,
+    "Include sample code?",
+    false,
+  );
+  const includeDocker = await promptYesNo(
+    rl,
+    "Include Docker/deployment?",
+    true,
+  );
+
+  return {
+    projectName,
+    scope,
+    domain,
+    includeFirebase,
+    includeSentry,
+    includeSampleCode,
+    includeDocker,
+  };
+}
+
+function printSummary(config: InitConfig): void {
+  console.log("\n📋 Configuration Summary:\n");
+  console.log(`  Project name:    ${config.projectName}`);
+  console.log(`  Package scope:   ${config.scope}`);
+  console.log(`  Domain:          ${config.domain}`);
+  console.log(`  Firebase auth:   ${config.includeFirebase ? "yes" : "no"}`);
+  console.log(`  Sentry:          ${config.includeSentry ? "yes" : "no"}`);
+  console.log(`  Sample code:     ${config.includeSampleCode ? "yes" : "no"}`);
+  console.log(`  Docker:          ${config.includeDocker ? "yes" : "no"}`);
+  console.log("");
+}
+
+function cleanupCleanVariants(root: string): void {
+  removeFiles([
+    join(root, "frontend/src/pages/Layout.clean.tsx"),
+    join(root, "frontend/src/pages/Home.clean.tsx"),
+    join(root, "frontend/src/pages/Home.clean-with-auth.tsx"),
+    join(root, "frontend/src/utils/logger.clean.ts"),
+    join(root, "server/services/logger/loggerService.clean.ts"),
+  ]);
+}
+
+function cleanupRemainingMarkers(root: string): void {
+  const markerFiles = findFilesWithPattern(
+    root,
+    [".ts", ".tsx", ".md"],
+    "@init:",
+  );
+  for (const f of markerFiles) {
+    let content = readFileSync(f, "utf-8");
+    content = content.replace(
+      /^[ \t]*\/\/ @init:\S+-(?:start|end)\s*\n?/gm,
+      "",
+    );
+    content = content.replace(
+      /^[ \t]*\{\/\* @init:\S+-(?:start|end) \*\/\}\s*\n?/gm,
+      "",
+    );
+    content = content.replace(
+      /^[ \t]*<!-- @init:\S+-(?:start|end) -->\s*\n?/gm,
+      "",
+    );
+    content = content.replace(/\n{3,}/g, "\n\n").trim() + "\n";
+    writeFileSync(f, content);
+  }
+}
+
+async function main(): Promise<void> {
+  const rootPkg = JSON.parse(readFileSync(join(ROOT, "package.json"), "utf-8"));
+  if (rootPkg.initialized) {
+    console.error("This project has already been initialized.");
+    process.exit(1);
+  }
+
+  const isDryRun = process.argv.includes("--dry-run");
+
+  const rl = createInterface({ input: process.stdin, output: process.stdout });
+  const config = await collectConfig(rl);
+  printSummary(config);
+
+  const confirm = await promptYesNo(rl, "Proceed?", true);
+  rl.close();
+
+  if (!confirm) {
+    console.log("Aborted.");
+    process.exit(0);
+  }
+
+  if (isDryRun) {
+    console.log("\n🔍 Dry run — no files modified.\n");
+    if (!config.includeFirebase)
+      console.log("  Would remove: Firebase auth modules");
+    if (!config.includeSentry) console.log("  Would remove: Sentry modules");
+    if (!config.includeSampleCode)
+      console.log("  Would remove: Sample code (todos, hello)");
+    if (!config.includeDocker)
+      console.log("  Would remove: Docker/deployment configs");
+    console.log(`  Would rename scope: @sandilya-stack → ${config.scope}`);
+    console.log(`  Would update domain: sandilya.dev → ${config.domain}`);
+    console.log(
+      `  Would update project name: sandilya-stack → ${config.projectName}`,
+    );
+    console.log("  Would regenerate: CLAUDE.md, docs/ai/*, .env files");
+    console.log("  Would reset git history");
+    process.exit(0);
+  }
+
+  console.log("\n⚡ Initializing project...\n");
+
+  if (!config.includeFirebase) {
+    console.log("  Removing Firebase auth...");
+    removeFirebase(ROOT);
+  } else {
+    const clientPath = join(ROOT, "frontend/src/api/client.ts");
+    if (existsSync(clientPath)) {
+      let content = readFileSync(clientPath, "utf-8");
+      content = removeMarkerBlocks(content, "no-firebase");
+      writeFileSync(clientPath, content);
+    }
+  }
+
+  if (!config.includeSentry) {
+    console.log("  Removing Sentry...");
+    removeSentry(ROOT);
+  }
+
+  if (!config.includeSampleCode) {
+    console.log("  Removing sample code...");
+    removeSampleCode(ROOT, config.includeFirebase);
+  }
+
+  if (!config.includeDocker) {
+    console.log("  Removing Docker/deployment configs...");
+    removeDocker(ROOT);
+  }
+
+  console.log("  Renaming scope...");
+  renameScope(ROOT, config.scope);
+
+  console.log("  Updating project name...");
+  updateProjectName(ROOT, config.projectName);
+
+  console.log("  Updating domain...");
+  updateDomain(ROOT, config.domain);
+
+  console.log("  Generating env files...");
+  generateEnvFiles(ROOT, config);
+
+  console.log("  Regenerating docs...");
+  regenerateDocs(ROOT, config);
+
+  console.log("  Cleaning up variants and markers...");
+  cleanupCleanVariants(ROOT);
+  cleanupRemainingMarkers(ROOT);
+
+  console.log("  Marking as initialized...");
+  const pkg = JSON.parse(readFileSync(join(ROOT, "package.json"), "utf-8"));
+  pkg.initialized = true;
+  delete pkg.scripts?.init;
+  writeFileSync(
+    join(ROOT, "package.json"),
+    JSON.stringify(pkg, null, 2) + "\n",
+  );
+
+  console.log("  Running bun install...");
+  const installResult = Bun.spawnSync(["bun", "install"], {
+    cwd: ROOT,
+    stdout: "inherit",
+    stderr: "inherit",
+  });
+  if (installResult.exitCode !== 0) {
+    console.warn("  ⚠️  bun install had issues. Check output above.");
+  }
+
+  console.log("  Running tests...");
+  const testResult = Bun.spawnSync(["bun", "run", "test"], {
+    cwd: ROOT,
+    stdout: "inherit",
+    stderr: "inherit",
+  });
+  if (testResult.exitCode !== 0) {
+    console.warn("  ⚠️  Some tests failed. Check output above.");
+  }
+
+  console.log("  Removing init script...");
+  removeFiles([
+    join(ROOT, "scripts/init.ts"),
+    join(ROOT, "scripts/init.test.ts"),
+  ]);
+
+  console.log("  Resetting git history...");
+  rmSync(join(ROOT, ".git"), { recursive: true, force: true });
+  Bun.spawnSync(["git", "init"], { cwd: ROOT, stdout: "pipe" });
+  Bun.spawnSync(["git", "add", "-A"], { cwd: ROOT, stdout: "pipe" });
+  Bun.spawnSync(
+    ["git", "commit", "-m", `chore: initialize ${config.projectName}`],
+    { cwd: ROOT, stdout: "pipe" },
+  );
+
+  console.log(
+    `\n✅ Project "${config.projectName}" initialized successfully!\n`,
+  );
+  console.log("  Next steps:");
+  console.log("  1. Update .env files with your actual credentials");
+  console.log("  2. Run: bun run dev");
+  console.log("");
+}
+
+if (import.meta.main) {
+  main().catch((err) => {
+    console.error("Init failed:", err);
+    process.exit(1);
+  });
 }
